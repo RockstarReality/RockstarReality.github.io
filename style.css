@@ -12,7 +12,7 @@ html {
 
 h1 {
   font-size: 3rem;
-  color: darkorange;
+  color: #ee4508;
 }
 
 hr {
@@ -38,8 +38,8 @@ hr {
 }
 
 .btn-primary {
-  background-color: darkorange;
-  border-color: darkorange;
+  background-color: #ee4508;
+  border-color: #ee4508;
 }
 
 .btn-primary:hover {
