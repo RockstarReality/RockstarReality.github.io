@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Training Lab</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header p {
+            color: #a0a0a0;
+            font-size: 1.1rem;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-card h3 {
+            color: #a0a0a0;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #ffd700;
+        }
+
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .module-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 12px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .module-card:hover {
+            transform: translateY(-5px);
+            border-color: #ffd700;
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.2);
+        }
+
+        .module-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .module-icon {
+            background: rgba(255, 215, 0, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 24px;
+        }
+
+        .module-title {
+            flex: 1;
+        }
+
+        .module-title h3 {
+            color: #ffd700;
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+        }
+
+        .module-title p {
+            color: #a0a0a0;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .module-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .difficulty {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .difficulty.beginner {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .difficulty.intermediate {
+            background: rgba(255, 215, 0, 0.2);
+            color: #ffd700;
+        }
+
+        .difficulty.advanced {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .exercise-count {
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        .exercise-view {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 12px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .exercise-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .exercise-header h3 {
+            color: #ffd700;
+            font-size: 1.3rem;
+        }
+
+        .back-btn {
+            background: transparent;
+            border: 1px solid #666;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            border-color: #ffd700;
+            color: #ffd700;
+        }
+
+        .question-box {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+
+        .hint-box {
+            background: rgba(147, 51, 234, 0.1);
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .hint-box p {
+            color: #c084fc;
+            font-size: 0.9rem;
+        }
+
+        .answer-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #666;
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+
+        .answer-input:focus {
+            outline: none;
+            border-color: #ffd700;
+        }
+
+        .options-container {
+            margin-bottom: 20px;
+        }
+
+        .option {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #666;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .option:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .option.selected {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        .option input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .submit-btn {
+            background: #ffd700;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            background: #ffed4e;
+            transform: translateY(-2px);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .feedback-box {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid;
+        }
+
+        .feedback-box.correct {
+            background: rgba(34, 197, 94, 0.1);
+            border-color: rgba(34, 197, 94, 0.5);
+        }
+
+        .feedback-box.incorrect {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.5);
+        }
+
+        .feedback-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .feedback-box.correct .feedback-header {
+            color: #22c55e;
+        }
+
+        .feedback-box.incorrect .feedback-header {
+            color: #ef4444;
+        }
+
+        .feedback-explanation {
+            color: #d1d5db;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .next-btn {
+            background: #374151;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .next-btn:hover {
+            background: #4b5563;
+        }
+
+        .completed-badge {
+            color: #22c55e;
+            font-size: 1.2rem;
+            margin-left: 10px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .modules-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <span>🛡️</span>
+                Security Training Lab
+            </h1>
+            <p>Interactive hands-on security exercises</p>
+        </div>
+
+        <div class="dashboard">
+            <div class="stat-card">
+                <h3>Total Score</h3>
+                <div class="value" id="totalScore">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Modules Completed</h3>
+                <div class="value" id="modulesCompleted">0/4</div>
+            </div>
+            <div class="stat-card">
+                <h3>Skill Level</h3>
+                <div class="value" id="skillLevel">Novice</div>
+            </div>
+        </div>
+
+        <div id="modulesView" class="modules-grid"></div>
+        <div id="exerciseView" class="exercise-view hidden"></div>
+    </div>
+
+    <script>
+        const state = {
+            selectedModule: null,
+            currentExercise: 0,
+            userAnswer: '',
+            score: 0,
+            completedModules: []
+        };
+
+        const modules = [
+            {
+                id: 1,
+                title: "SQL Injection Basics",
+                icon: "⚠️",
+                difficulty: "beginner",
+                description: "Learn to identify and prevent SQL injection vulnerabilities",
+                exercises: [
+                    {
+                        question: "What SQL injection payload would bypass this login check?\nQuery: SELECT * FROM users WHERE username='$input' AND password='$pass'",
+                        hint: "Think about closing the quote and adding a condition that's always true",
+                        answer: "' OR '1'='1",
+                        explanation: "The payload ' OR '1'='1 closes the username quote and adds a condition that's always true, bypassing authentication. The query becomes: SELECT * FROM users WHERE username='' OR '1'='1' AND password='...'",
+                        type: "text"
+                    },
+                    {
+                        question: "Which of these defenses is MOST effective against SQL injection?",
+                        options: [
+                            "Input validation with regex",
+                            "Escaping special characters",
+                            "Parameterized queries/prepared statements",
+                            "Web Application Firewall (WAF)"
+                        ],
+                        answer: 2,
+                        explanation: "Parameterized queries separate SQL code from data, making injection impossible. While other methods help, they can be bypassed. Prepared statements are the gold standard.",
+                        type: "multiple"
+                    },
+                    {
+                        question: "Identify the vulnerable code:\n\nA) cursor.execute('SELECT * FROM users WHERE id=?', (user_id,))\nB) cursor.execute(f'SELECT * FROM users WHERE id={user_id}')\nC) cursor.execute('SELECT * FROM users WHERE id=%s', (user_id,))",
+                        options: ["A", "B", "C", "A and C"],
+                        answer: 1,
+                        explanation: "Option B uses string formatting (f-string) which directly inserts user input into the query, making it vulnerable. A and C use parameterized queries (? and %s placeholders), which are safe.",
+                        type: "multiple"
+                    }
+                ]
+            },
+            {
+                id: 2,
+                title: "IAM Best Practices",
+                icon: "🔒",
+                difficulty: "intermediate",
+                description: "Master cloud IAM principles and least privilege access",
+                exercises: [
+                    {
+                        question: "What's wrong with this AWS IAM policy?\n\n{\n  \"Effect\": \"Allow\",\n  \"Action\": \"*\",\n  \"Resource\": \"*\"\n}",
+                        hint: "Think about the principle of least privilege",
+                        answer: "grants full access to all services",
+                        explanation: "This policy grants unrestricted access to ALL AWS services and resources. It violates least privilege. Instead, specify only the actions and resources actually needed.",
+                        type: "text"
+                    },
+                    {
+                        question: "Which authentication method is MOST secure for cloud service accounts?",
+                        options: [
+                            "Long-lived access keys stored in code",
+                            "IAM roles with temporary credentials",
+                            "Shared passwords in environment variables",
+                            "API keys rotated monthly"
+                        ],
+                        answer: 1,
+                        explanation: "IAM roles provide temporary, automatically rotating credentials without storing secrets. This follows the principle of never storing long-lived credentials.",
+                        type: "multiple"
+                    },
+                    {
+                        question: "A developer needs to read from an S3 bucket and write to DynamoDB. Which permissions should you grant?",
+                        options: [
+                            "AdministratorAccess",
+                            "s3:GetObject on the bucket, dynamodb:PutItem on the table",
+                            "s3:*, dynamodb:*",
+                            "PowerUserAccess"
+                        ],
+                        answer: 1,
+                        explanation: "Grant only the specific actions needed (s3:GetObject, dynamodb:PutItem) on only the specific resources. This implements least privilege correctly.",
+                        type: "multiple"
+                    }
+                ]
+            },
+            {
+                id: 3,
+                title: "Incident Response",
+                icon: "🎯",
+                difficulty: "advanced",
+                description: "Practice responding to security incidents step-by-step",
+                exercises: [
+                    {
+                        question: "You detect unusual API calls from a compromised IAM access key. What's your FIRST step?",
+                        options: [
+                            "Delete the user account",
+                            "Rotate the access key",
+                            "Disable/revoke the access key immediately",
+                            "Investigate the source IP"
+                        ],
+                        answer: 2,
+                        explanation: "CONTAINMENT first! Immediately disable the compromised key to stop ongoing damage. Then investigate and remediate. The IR order is: Prepare → Detect → Contain → Eradicate → Recover → Lessons Learned.",
+                        type: "multiple"
+                    },
+                    {
+                        question: "During incident response, you find malware on a production server. What should you do BEFORE shutting it down?",
+                        hint: "Think about preserving evidence",
+                        answer: "capture memory dump",
+                        explanation: "Capture volatile data (memory dump, active connections) BEFORE shutdown, as it's lost when powered off. This preserves evidence for forensics while still allowing containment.",
+                        type: "text"
+                    },
+                    {
+                        question: "What information should you include in an incident report?",
+                        options: [
+                            "Timeline, affected systems, actions taken, root cause, recommendations",
+                            "Only the root cause and fix",
+                            "Names of people who made mistakes",
+                            "Just the technical details"
+                        ],
+                        answer: 0,
+                        explanation: "Comprehensive incident reports include timeline, impact, response actions, root cause analysis, and prevention recommendations. Focus on systems and processes, not blame.",
+                        type: "multiple"
+                    }
+                ]
+            },
+            {
+                id: 4,
+                title: "Zero Trust Architecture",
+                icon: "🛡️",
+                difficulty: "intermediate",
+                description: "Understand and implement Zero Trust security principles",
+                exercises: [
+                    {
+                        question: "What is the core principle of Zero Trust?",
+                        hint: "Think about the traditional perimeter security model",
+                        answer: "never trust always verify",
+                        explanation: "Zero Trust assumes breach and never trusts by default - even inside the network. Every access request must be verified regardless of location.",
+                        type: "text"
+                    },
+                    {
+                        question: "Which is NOT a pillar of Zero Trust?",
+                        options: [
+                            "Verify explicitly",
+                            "Use least privilege access",
+                            "Trust internal network traffic",
+                            "Assume breach"
+                        ],
+                        answer: 2,
+                        explanation: "Zero Trust NEVER trusts internal traffic by default. The three pillars are: verify explicitly, use least privilege, and assume breach.",
+                        type: "multiple"
+                    },
+                    {
+                        question: "In Zero Trust, what should determine access decisions?",
+                        options: [
+                            "Network location only",
+                            "User identity, device health, location, data sensitivity, real-time risk",
+                            "Just username and password",
+                            "Whether user is on VPN"
+                        ],
+                        answer: 1,
+                        explanation: "Zero Trust uses context-aware policies considering multiple factors: identity, device state, location, data classification, and real-time risk signals for every access decision.",
+                        type: "multiple"
+                    }
+                ]
+            }
+        ];
+
+        function renderModules() {
+            const container = document.getElementById('modulesView');
+            container.innerHTML = modules.map((module, idx) => `
+                <div class="module-card" onclick="selectModule(${idx})">
+                    <div class="module-header">
+                        <div class="module-icon">${module.icon}</div>
+                        <div class="module-title">
+                            <h3>
+                                ${module.title}
+                                ${state.completedModules.includes(idx) ? '<span class="completed-badge">✓</span>' : ''}
+                            </h3>
+                            <p>${module.description}</p>
+                        </div>
+                    </div>
+                    <div class="module-meta">
+                        <span class="difficulty ${module.difficulty}">${module.difficulty.charAt(0).toUpperCase() + module.difficulty.slice(1)}</span>
+                        <span class="exercise-count">${module.exercises.length} exercises</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectModule(idx) {
+            state.selectedModule = idx;
+            state.currentExercise = 0;
+            document.getElementById('modulesView').classList.add('hidden');
+            document.getElementById('exerciseView').classList.remove('hidden');
+            renderExercise();
+        }
+
+        function renderExercise() {
+            const module = modules[state.selectedModule];
+            const exercise = module.exercises[state.currentExercise];
+            const container = document.getElementById('exerciseView');
+
+            let answerHTML = '';
+            if (exercise.type === 'text') {
+                answerHTML = `
+                    <input type="text" id="answerInput" class="answer-input" placeholder="Enter your answer..." onkeypress="if(event.key==='Enter') submitAnswer()">
+                `;
+            } else {
+                answerHTML = `
+                    <div class="options-container">
+                        ${exercise.options.map((option, idx) => `
+                            <div class="option" onclick="selectOption(${idx})">
+                                <input type="radio" name="answer" value="${idx}" id="option${idx}">
+                                <label for="option${idx}">${option}</label>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            container.innerHTML = `
+                <div class="exercise-header">
+                    <h3>Exercise ${state.currentExercise + 1} of ${module.exercises.length}</h3>
+                    <button class="back-btn" onclick="backToModules()">← Back to Modules</button>
+                </div>
+
+                <div class="question-box">${exercise.question}</div>
+
+                ${exercise.hint ? `
+                    <div class="hint-box">
+                        <p>💡 Hint: ${exercise.hint}</p>
+                    </div>
+                ` : ''}
+
+                ${answerHTML}
+
+                <button class="submit-btn" onclick="submitAnswer()" id="submitBtn">Submit Answer</button>
+
+                <div id="feedbackBox"></div>
+            `;
+        }
+
+        function selectOption(idx) {
+            document.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+            document.querySelectorAll('.option')[idx].classList.add('selected');
+            document.getElementById(`option${idx}`).checked = true;
+        }
+
+        function submitAnswer() {
+            const module = modules[state.selectedModule];
+            const exercise = module.exercises[state.currentExercise];
+            let userAnswer;
+            let isCorrect = false;
+
+            if (exercise.type === 'text') {
+                userAnswer = document.getElementById('answerInput').value;
+                const normalized = userAnswer.toLowerCase().trim();
+                const correctAnswer = exercise.answer.toLowerCase();
+                isCorrect = normalized.includes(correctAnswer) || correctAnswer.includes(normalized);
+            } else {
+                const selected = document.querySelector('input[name="answer"]:checked');
+                if (!selected) return;
+                userAnswer = parseInt(selected.value);
+                isCorrect = userAnswer === exercise.answer;
+            }
+
+            if (isCorrect) {
+                state.score += 10;
+                updateDashboard();
+
+                if (state.currentExercise === module.exercises.length - 1 && !state.completedModules.includes(state.selectedModule)) {
+                    state.completedModules.push(state.selectedModule);
+                    updateDashboard();
+                }
+            }
+
+            showFeedback(isCorrect, exercise.explanation);
+        }
+
+        function showFeedback(isCorrect, explanation) {
+            const feedbackBox = document.getElementById('feedbackBox');
+            feedbackBox.className = `feedback-box ${isCorrect ? 'correct' : 'incorrect'}`;
+            feedbackBox.innerHTML = `
+                <div class="feedback-header">
+                    ${isCorrect ? '✓ Correct!' : '✗ Incorrect'}
+                </div>
+                <div class="feedback-explanation">${explanation}</div>
+                <button class="next-btn" onclick="nextExercise()">
+                    ${state.currentExercise < modules[state.selectedModule].exercises.length - 1 ? 'Next Exercise →' : 'Complete Module'}
+                </button>
+            `;
+
+            document.getElementById('submitBtn').disabled = true;
+        }
+
+        function nextExercise() {
+            const module = modules[state.selectedModule];
+            if (state.currentExercise < module.exercises.length - 1) {
+                state.currentExercise++;
+                renderExercise();
+            } else {
+                backToModules();
+            }
+        }
+
+        function backToModules() {
+            state.selectedModule = null;
+            state.currentExercise = 0;
+            document.getElementById('modulesView').classList.remove('hidden');
+            document.getElementById('exerciseView').classList.add('hidden');
+            renderModules();
+        }
+
+        function updateDashboard() {
+            document.getElementById('totalScore').textContent = state.score;
+            document.getElementById('modulesCompleted').textContent = `${state.completedModules.length}/${modules.length}`;
+            
+            let skillLevel = 'Novice';
+            if (state.score >= 100) skillLevel = 'Expert';
+            else if (state.score >= 50) skillLevel = 'Intermediate';
+            document.getElementById('skillLevel').textContent = skillLevel;
+        }
+
+        // Initialize
+        renderModules();
+        updateDashboard();
+    </script>
+</body>
+</html>
