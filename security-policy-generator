@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Policy Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #312e81 50%, #1e1b4b 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header p {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .wizard-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .sidebar {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            height: fit-content;
+        }
+
+        .sidebar h3 {
+            color: #60a5fa;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+        }
+
+        .step {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .step:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .step.active {
+            background: rgba(96, 165, 250, 0.2);
+            border-left-color: #60a5fa;
+        }
+
+        .step.completed {
+            background: rgba(34, 197, 94, 0.1);
+            border-left-color: #22c55e;
+        }
+
+        .step-number {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: rgba(148, 163, 184, 0.2);
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            margin-right: 10px;
+            font-weight: 600;
+        }
+
+        .step.active .step-number {
+            background: #60a5fa;
+            color: #000;
+        }
+
+        .step.completed .step-number {
+            background: #22c55e;
+            color: #000;
+        }
+
+        .main-content {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            min-height: 500px;
+        }
+
+        .step-content {
+            display: none;
+        }
+
+        .step-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .step-content h2 {
+            color: #60a5fa;
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+        }
+
+        .step-content p {
+            color: #94a3b8;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #475569;
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #60a5fa;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .checkbox-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-item:hover {
+            background: rgba(96, 165, 250, 0.1);
+            border-color: #60a5fa;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+        }
+
+        .checkbox-item.selected {
+            background: rgba(96, 165, 250, 0.2);
+            border-color: #60a5fa;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(96, 165, 250, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(148, 163, 184, 0.2);
+            color: #cbd5e1;
+            border: 1px solid #475569;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(148, 163, 184, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .policy-output {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            margin-top: 30px;
+        }
+
+        .policy-document {
+            background: #fff;
+            color: #000;
+            padding: 40px;
+            border-radius: 8px;
+            max-height: 600px;
+            overflow-y: auto;
+            line-height: 1.8;
+        }
+
+        .policy-document h1 {
+            color: #1e3a8a;
+            border-bottom: 3px solid #60a5fa;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .policy-document h2 {
+            color: #1e40af;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+        }
+
+        .policy-document h3 {
+            color: #3730a3;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .policy-document ul, .policy-document ol {
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+
+        .policy-document li {
+            margin-bottom: 8px;
+        }
+
+        .policy-document .metadata {
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            font-size: 0.9rem;
+        }
+
+        .download-btn {
+            background: #22c55e;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            background: #16a34a;
+            transform: translateY(-2px);
+        }
+
+        .framework-badge {
+            display: inline-block;
+            background: rgba(96, 165, 250, 0.2);
+            color: #60a5fa;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            border: 1px solid #60a5fa;
+        }
+
+        .info-box {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .info-box p {
+            color: #93c5fd;
+            margin: 0;
+        }
+
+        @media (max-width: 968px) {
+            .wizard-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <span>📋</span>
+                Security Policy Generator
+            </h1>
+            <p>Create customized security policies aligned with compliance frameworks</p>
+        </div>
+
+        <div class="wizard-container">
+            <div class="sidebar">
+                <h3>Policy Builder</h3>
+                <div class="step active" data-step="1">
+                    <span class="step-number">1</span>
+                    <span>Company Info</span>
+                </div>
+                <div class="step" data-step="2">
+                    <span class="step-number">2</span>
+                    <span>Industry & Compliance</span>
+                </div>
+                <div class="step" data-step="3">
+                    <span class="step-number">3</span>
+                    <span>Policy Type</span>
+                </div>
+                <div class="step" data-step="4">
+                    <span class="step-number">4</span>
+                    <span>Requirements</span>
+                </div>
+                <div class="step" data-step="5">
+                    <span class="step-number">5</span>
+                    <span>Review & Generate</span>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <!-- Step 1: Company Info -->
+                <div class="step-content active" data-step="1">
+                    <h2>Company Information</h2>
+                    <p>Let's start with basic information about your organization</p>
+
+                    <div class="form-group">
+                        <label for="companyName">Company Name *</label>
+                        <input type="text" id="companyName" placeholder="Acme Corporation">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="companySize">Company Size *</label>
+                        <select id="companySize">
+                            <option value="">Select size...</option>
+                            <option value="1-50">1-50 employees</option>
+                            <option value="51-200">51-200 employees</option>
+                            <option value="201-500">201-500 employees</option>
+                            <option value="501-1000">501-1,000 employees</option>
+                            <option value="1000+">1,000+ employees</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ciso">Chief Information Security Officer</label>
+                        <input type="text" id="ciso" placeholder="Jane Smith">
+                    </div>
+
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="nextStep()">Next →</button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Industry & Compliance -->
+                <div class="step-content" data-step="2">
+                    <h2>Industry & Compliance Requirements</h2>
+                    <p>Select your industry and applicable compliance frameworks</p>
+
+                    <div class="form-group">
+                        <label for="industry">Industry *</label>
+                        <select id="industry">
+                            <option value="">Select industry...</option>
+                            <option value="financial">Financial Services</option>
+                            <option value="healthcare">Healthcare</option>
+                            <option value="technology">Technology</option>
+                            <option value="retail">Retail/E-commerce</option>
+                            <option value="government">Government</option>
+                            <option value="education">Education</option>
+                            <option value="manufacturing">Manufacturing</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Compliance Frameworks (select all that apply)</label>
+                        <div class="checkbox-group" id="frameworks">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="gdpr" value="GDPR">
+                                <label for="gdpr">GDPR</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="hipaa" value="HIPAA">
+                                <label for="hipaa">HIPAA</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="soc2" value="SOC 2">
+                                <label for="soc2">SOC 2</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="iso27001" value="ISO 27001">
+                                <label for="iso27001">ISO 27001</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="pci" value="PCI-DSS">
+                                <label for="pci">PCI-DSS</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="nist" value="NIST CSF">
+                                <label for="nist">NIST CSF</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+                        <button class="btn btn-primary" onclick="nextStep()">Next →</button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Policy Type -->
+                <div class="step-content" data-step="3">
+                    <h2>Select Policy Type</h2>
+                    <p>Choose the type of security policy you want to generate</p>
+
+                    <div class="form-group">
+                        <label for="policyType">Policy Type *</label>
+                        <select id="policyType">
+                            <option value="">Select policy type...</option>
+                            <option value="access-control">Access Control & IAM Policy</option>
+                            <option value="password">Password & Authentication Policy</option>
+                            <option value="data-protection">Data Protection & Privacy Policy</option>
+                            <option value="incident-response">Incident Response Policy</option>
+                            <option value="acceptable-use">Acceptable Use Policy</option>
+                            <option value="byod">BYOD & Mobile Device Policy</option>
+                            <option value="cloud-security">Cloud Security Policy</option>
+                            <option value="remote-work">Remote Work Security Policy</option>
+                        </select>
+                    </div>
+
+                    <div class="info-box">
+                        <p><strong>💡 Tip:</strong> Start with Access Control & IAM Policy for comprehensive identity management, or choose Password Policy for immediate security improvements.</p>
+                    </div>
+
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+                        <button class="btn btn-primary" onclick="nextStep()">Next →</button>
+                    </div>
+                </div>
+
+                <!-- Step 4: Requirements -->
+                <div class="step-content" data-step="4">
+                    <h2>Security Requirements</h2>
+                    <p>Customize specific security controls for your policy</p>
+
+                    <div class="form-group">
+                        <label>Multi-Factor Authentication</label>
+                        <select id="mfaRequired">
+                            <option value="required">Required for all users</option>
+                            <option value="privileged">Required for privileged accounts only</option>
+                            <option value="optional">Optional/Recommended</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Password Requirements</label>
+                        <select id="passwordComplexity">
+                            <option value="high">High (16+ chars, complexity, 90-day expiry)</option>
+                            <option value="medium">Medium (12+ chars, complexity, no expiry)</option>
+                            <option value="basic">Basic (8+ chars, minimal complexity)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Access Review Frequency</label>
+                        <select id="accessReview">
+                            <option value="quarterly">Quarterly (every 3 months)</option>
+                            <option value="semi-annual">Semi-annual (every 6 months)</option>
+                            <option value="annual">Annual (yearly)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Additional Security Controls</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="encryption" value="encryption" checked>
+                                <label for="encryption">Data Encryption</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="logging" value="logging" checked>
+                                <label for="logging">Activity Logging</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="zerotrust" value="zerotrust">
+                                <label for="zerotrust">Zero Trust Architecture</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="dlp" value="dlp">
+                                <label for="dlp">Data Loss Prevention</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+                        <button class="btn btn-primary" onclick="nextStep()">Next →</button>
+                    </div>
+                </div>
+
+                <!-- Step 5: Review & Generate -->
+                <div class="step-content" data-step="5">
+                    <h2>Review & Generate Policy</h2>
+                    <p>Review your selections and generate your custom security policy</p>
+
+                    <div id="reviewSummary"></div>
+
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+                        <button class="btn btn-primary" onclick="generatePolicy()">🎯 Generate Policy</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="policyOutput" class="policy-output" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: #60a5fa; margin: 0;">Generated Policy Document</h2>
+                <button class="download-btn" onclick="downloadPolicy()">📥 Download as Text</button>
+            </div>
+            <div class="policy-document" id="policyDocument"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        const formData = {};
+
+        function nextStep() {
+            if (!validateStep(currentStep)) return;
+            
+            saveStepData(currentStep);
+            
+            if (currentStep < 5) {
+                document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+                document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+                
+                document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('completed');
+                
+                currentStep++;
+                document.querySelector(`.step-content[data-step="${currentStep}"]`).classList.add('active');
+                document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('active');
+                
+                if (currentStep === 5) {
+                    showReviewSummary();
+                }
+                
+                window.scrollTo(0, 0);
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+                document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+                
+                currentStep--;
+                document.querySelector(`.step-content[data-step="${currentStep}"]`).classList.add('active');
+                document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('active');
+                
+                window.scrollTo(0, 0);
+            }
+        }
+
+        function validateStep(step) {
+            switch(step) {
+                case 1:
+                    if (!document.getElementById('companyName').value) {
+                        alert('Please enter company name');
+                        return false;
+                    }
+                    if (!document.getElementById('companySize').value) {
+                        alert('Please select company size');
+                        return false;
+                    }
+                    break;
+                case 2:
+                    if (!document.getElementById('industry').value) {
+                        alert('Please select an industry');
+                        return false;
+                    }
+                    break;
+                case 3:
+                    if (!document.getElementById('policyType').value) {
+                        alert('Please select a policy type');
+                        return false;
+                    }
+                    break;
+            }
+            return true;
+        }
+
+        function saveStepData(step) {
+            switch(step) {
+                case 1:
+                    formData.companyName = document.getElementById('companyName').value;
+                    formData.companySize = document.getElementById('companySize').value;
+                    formData.ciso = document.getElementById('ciso').value || 'Chief Information Security Officer';
+                    break;
+                case 2:
+                    formData.industry = document.getElementById('industry').value;
+                    formData.frameworks = Array.from(document.querySelectorAll('#frameworks input:checked')).map(cb => cb.value);
+                    break;
+                case 3:
+                    formData.policyType = document.getElementById('policyType').value;
+                    break;
+                case 4:
+                    formData.mfaRequired = document.getElementById('mfaRequired').value;
+                    formData.passwordComplexity = document.getElementById('passwordComplexity').value;
+                    formData.accessReview = document.getElementById('accessReview').value;
+                    formData.additionalControls = Array.from(document.querySelectorAll('#encryption, #logging, #zerotrust, #dlp')).filter(cb => cb.checked).map(cb => cb.value);
+                    break;
+            }
+        }
+
+        function showReviewSummary() {
+            const summary = `
+                <div class="info-box">
+                    <p><strong>Company:</strong> ${formData.companyName} (${formData.companySize} employees)</p>
+                    <p><strong>Industry:</strong> ${formData.industry}</p>
+                    <p><strong>Compliance Frameworks:</strong> ${formData.frameworks.length > 0 ? formData.frameworks.join(', ') : 'None selected'}</p>
+                    <p><strong>Policy Type:</strong> ${document.getElementById('policyType').options[document.getElementById('policyType').selectedIndex].text}</p>
+                    <p><strong>MFA:</strong> ${formData.mfaRequired}</p>
+                    <p><strong>Password Requirements:</strong> ${formData.passwordComplexity}</p>
+                </div>
+            `;
+            document.getElementById('reviewSummary').innerHTML = summary;
+        }
+
+        function generatePolicy() {
+            saveStepData(4);
+            const policy = createPolicyDocument();
+            document.getElementById('policyDocument').innerHTML = policy;
+            document.getElementById('policyOutput').style.display = 'block';
+            document.getElementById('policyOutput').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function createPolicyDocument() {
+            const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            const policyTypeText = document.getElementById('policyType').options[document.getElementById('policyType').selectedIndex].text;
+            
+            let frameworkSection = '';
+            if (formData.frameworks.length > 0) {
+                frameworkSection = `
+                    <p><strong>Applicable Frameworks:</strong> ${formData.frameworks.map(f => `<span class="framework-badge">${f}</span>`).join('')}</p>
+                `;
+            }
+
+            const policyContent = getPolicyContent(formData.policyType);
+
+            return `
+                <h1>${formData.companyName}<br>${policyTypeText}</h1>
+                
+                <div class="metadata">
+                    <p><strong>Document Version:</strong> 1.0</p>
+                    <p><strong>Effective Date:</strong> ${today}</p>
+                    <p><strong>Review Date:</strong> ${getReviewDate()}</p>
+                    <p><strong>Policy Owner:</strong> ${formData.ciso}</p>
+                    <p><strong>Organization Size:</strong> ${formData.companySize} employees</p>
+                    ${frameworkSection}
+                </div>
+
+                ${policyContent}
+
+                <h2>10. Policy Review and Updates</h2>
+                <p>This policy shall be reviewed ${formData.accessReview} and updated as necessary to ensure continued alignment with business objectives, regulatory requirements, and industry best practices.</p>
+
+                <h2>11. Compliance and Enforcement</h2>
+                <p>Failure to comply with this policy may result in disciplinary action, up to and including termination of employment or contract. All violations will be investigated and documented.</p>
+
+                <h2>12. Contact Information</h2>
+                <p>For questions or concerns regarding this policy, contact:</p>
+                <ul>
+                    <li><strong>Policy Owner:</strong> ${formData.ciso}</li>
+                    <li><strong>Security Team:</strong> security@${formData.companyName.toLowerCase().replace(/\s+/g, '')}.com</li>
+                </ul>
+
+                <hr style="margin: 30px 0; border: none; border-top: 2px solid #e5e7eb;">
+                <p style="text-align: center; color: #6b7280; font-size: 0.9rem;">
+                    <em>This document is confidential and proprietary to ${formData.companyName}.</em><br>
+                    <em>Generated on ${today}</em>
+                </p>
+            `;
+        }
+
+        function getPolicyContent(policyType) {
+            const mfaText = formData.mfaRequired === 'required' ? 'mandatory for all users' : 
+                           formData.mfaRequired === 'privileged' ? 'mandatory for privileged accounts' : 'recommended';
+            
+            const passwordReqs = {
+                'high': { length: '16', complexity: 'uppercase, lowercase, numbers, and special characters', expiry: '90 days' },
+                'medium': { length: '12', complexity: 'uppercase, lowercase, and numbers', expiry: 'no expiration with MFA' },
+                'basic': { length: '8', complexity: 'mixed case and numbers', expiry: '180 days' }
+            };
+            const pwdReq = passwordReqs[formData.passwordComplexity];
+
+            switch(policyType) {
+                case 'access-control':
+                    return `
+                        <h2>1. Purpose and Scope</h2>
+                        <p>This Access Control and Identity & Access Management (IAM) Policy establishes the framework for managing user identities, authentication, authorization, and access controls across ${formData.companyName}'s information systems and resources.</p>
+
+                        <h2>2. Policy Statement</h2>
+                        <p>${formData.companyName} is committed to implementing robust access controls based on the principle of least privilege, ensuring that users have only the minimum access necessary to perform their job functions.</p>
+
+                        <h2>3. Access Control Principles</h2>
+                        <h3>3.1 Least Privilege</h3>
+                        <p>All users shall be granted the minimum level of access required to perform their assigned duties. Access rights shall be reviewed ${formData.accessReview}.</p>
+                        
+                        <h3>3.2 Role-Based Access Control (RBAC)</h3>
+                        <p>Access to systems and data shall be assigned based on job roles and responsibilities. Standard role templates shall be maintained and regularly reviewed.</p>
+                        
+                        <h3>3.3 Separation of Duties</h3>
+                        <p>Critical functions shall be divided among different individuals to prevent fraud and error. No single individual shall have control over all phases of a critical transaction.</p>
+
+                        <h2>4. Authentication Requirements</h2>
+                        <h3>4.1 Multi-Factor Authentication</h3>
+                        <p>Multi-factor authentication (MFA) is ${mfaText} and shall utilize at least two of the following factors:</p>
+                        <ul>
+                            <li>Something you know (password, PIN)</li>
+                            <li>Something you have (security token, mobile device)</li>
+                            <li>Something you are (biometric)</li>
+                        </ul>
+
+                        <h3>4.2 Password Requirements</h3>
+                        <ul>
+                            <li>Minimum password length: ${pwdReq.length} characters</li>
+                            <li>Complexity requirements: Must include ${pwdReq.complexity}</li>
+                            <li>Password expiration: ${pwdReq.expiry}</li>
+                            <li>Password history: Previous 12 passwords cannot be reused</li>
+                            <li>Account lockout: After 5 failed login attempts</li>
+                        </ul>
+
+                        <h2>5. Access Provisioning and De-provisioning</h2>
+                        <h3>5.1 User Onboarding</h3>
+                        <p>New user access requests must be approved by the user's direct manager and the system owner. Access shall be granted within 24 hours of approval.</p>
+
+                        <h3>5.2 Access Modification</h3>
+                        <p>Changes to user access rights must follow the same approval process as initial provisioning. All modifications shall be logged and auditable.</p>
+
+                        <h3>5.3 User Offboarding</h3>
+                        <p>Upon termination or role change, user access shall be revoked immediately. All credentials must be disabled within 1 hour of notification.</p>
+
+                        <h2>6. Privileged Access Management</h2>
+                        <p>Privileged accounts with administrative rights require enhanced security controls:</p>
+                        <ul>
+                            <li>Mandatory MFA for all privileged access</li>
+                            <li>Just-in-time (JIT) access provisioning where feasible</li>
+                            <li>Session recording for all privileged activities</li>
+                            <li>Quarterly access reviews of all privileged accounts</li>
+                            <li>Dedicated privileged access workstations for administrative tasks</li>
+                        </ul>
+
+                        <h2>7. Access Review and Certification</h2>
+                        <p>Access rights shall be reviewed and certified ${formData.accessReview} by resource owners to ensure:</p>
+                        <ul>
+                            <li>Users still require their current access levels</li>
+                            <li>Access aligns with current job responsibilities</li>
+                            <li>Orphaned accounts are identified and removed</li>
+                            <li>Excessive permissions are identified and remediated</li>
+                        </ul>
+
+                        <h2>8. Monitoring and Logging</h2>
+                        ${formData.additionalControls.includes('logging') ? `
+                        <p>All access activities shall be logged and monitored, including:</p>
+                        <ul>
+                            <li>Successful and failed authentication attempts</li>
+                            <li>Access to sensitive data and systems</li>
+                            <li>Privileged account usage</li>
+                            <li>Access right modifications</li>
+                            <li>Logs shall be retained for a minimum of 1 year</li>
+                        </ul>
+                        ` : '<p>Access logging should be implemented according to business requirements and regulatory obligations.</p>'}
+
+                        <h2>9. Third-Party and Vendor Access</h2>
+                        <p>External parties requiring access to ${formData.companyName} systems must:</p>
+                        <ul>
+                            <li>Sign a confidentiality agreement</li>
+                            <li>Use dedicated vendor accounts (no shared credentials)</li>
+                            <li>Access only through approved VPN or secure access methods</li>
+                            <li>Have access reviewed monthly and automatically expire after 90 days</li>
+                        </ul>
+                    `;
+
+                case 'password':
+                    return `
+                        <h2>1. Purpose and Scope</h2>
+                        <p>This Password and Authentication Policy establishes requirements for creating, managing, and protecting passwords and authentication credentials at ${formData.companyName}.</p>
+
+                        <h2>2. Password Requirements</h2>
+                        <h3>2.1 Password Complexity</h3>
+                        <ul>
+                            <li>Minimum length: ${pwdReq.length} characters</li>
+                            <li>Must contain: ${pwdReq.complexity}</li>
+                            <li>Cannot contain: Username, company name, or common dictionary words</li>
+                            <li>Cannot be reused: Previous 12 passwords are prohibited</li>
+                        </ul>
+
+                        <h3>2.2 Password Expiration</h3>
+                        <p>Passwords shall expire after ${pwdReq.expiry}. Users will receive notification 14 days prior to expiration.</p>
+
+                        <h2>3. Multi-Factor Authentication</h2>
+                        <p>MFA is ${mfaText}. Approved MFA methods include:</p>
+                        <ul>
+                            <li>Authenticator apps (Microsoft Authenticator, Google Authenticator)</li>
+                            <li>Hardware security keys (YubiKey, FIDO2 devices)</li>
+                            <li>SMS or voice call (least preferred method)</li>
+                        </ul>
+
+                        <h2>4. Password Management</h2>
+                        <h3>4.1 Password Storage</h3>
+                        <ul>
+                            <li>Passwords must never be written down or stored in plain text</li>
+                            <li>Approved password managers may be used for personal credential storage</li>
+                            <li>System passwords must be encrypted using industry-standard hashing algorithms</li>
+                        </ul>
+
+                        <h3>4.2 Password Sharing</h3>
+                        <p>Password sharing is strictly prohibited. Each user must have unique credentials. Shared accounts are not permitted except for specific system accounts approved by IT Security.</p>
+
+                        <h2>5. Account Lockout</h2>
+                        <p>After 5 consecutive failed login attempts, user accounts will be locked for 30 minutes. Privileged accounts lock after 3 failed attempts.</p>
+
+                        <h2>6. Password Reset Procedures</h2>
+                        <ul>
+                            <li>Users may reset passwords through self-service portal with MFA verification</li>
+                            <li>Help desk password resets require identity verification</li>
+                            <li>Emergency access procedures must be documented and approved by CISO</li>
+                        </ul>
+
+                        <h2>7. Service Account Passwords</h2>
+                        <ul>
+                            <li>Service accounts must use randomly generated passwords of 32+ characters</li>
+                            <li>Service account passwords must be rotated annually</li>
+                            <li>Service account credentials must be stored in approved secrets management systems</li>
+                        </ul>
+
+                        <h2>8. Monitoring and Compliance</h2>
+                        <p>Password policy compliance is monitored through automated tools. Non-compliant accounts will be disabled until requirements are met.</p>
+
+                        <h2>9. User Responsibilities</h2>
+                        <p>All users are responsible for:</p>
+                        <ul>
+                            <li>Keeping passwords confidential</li>
+                            <li>Not sharing credentials with anyone</li>
+                            <li>Reporting suspected password compromise immediately</li>
+                            <li>Using unique passwords for ${formData.companyName} systems</li>
+                            <li>Logging out when leaving workstations unattended</li>
+                        </ul>
+                    `;
+
+                default:
+                    return `
+                        <h2>1. Purpose</h2>
+                        <p>This policy establishes security requirements for ${formData.companyName} in accordance with industry best practices and applicable compliance requirements.</p>
+
+                        <h2>2. Scope</h2>
+                        <p>This policy applies to all employees, contractors, vendors, and third parties with access to ${formData.companyName} systems and data.</p>
+
+                        <h2>3. Security Requirements</h2>
+                        <p>All users must adhere to the following security requirements:</p>
+                        <ul>
+                            <li>Multi-factor authentication is ${mfaText}</li>
+                            <li>Passwords must be ${pwdReq.length}+ characters with ${pwdReq.complexity}</li>
+                            <li>Access rights will be reviewed ${formData.accessReview}</li>
+                            ${formData.additionalControls.includes('encryption') ? '<li>All sensitive data must be encrypted at rest and in transit</li>' : ''}
+                            ${formData.additionalControls.includes('logging') ? '<li>All access and security events must be logged</li>' : ''}
+                            ${formData.additionalControls.includes('zerotrust') ? '<li>Zero Trust principles must be applied to all access decisions</li>' : ''}
+                        </ul>
+
+                        <h2>4. User Responsibilities</h2>
+                        <p>Users are responsible for maintaining the security of their accounts and reporting any security incidents immediately to the security team.</p>
+
+                        <h2>5. Compliance</h2>
+                        <p>This policy aligns with ${formData.frameworks.length > 0 ? formData.frameworks.join(', ') : 'industry best practices'} and regulatory requirements applicable to ${formData.industry} organizations.</p>
+
+                        <h2>6. Access Control</h2>
+                        <p>Access to systems and data is granted based on least privilege principles and requires appropriate authorization.</p>
+
+                        <h2>7. Incident Response</h2>
+                        <p>All security incidents must be reported to the security team within 1 hour of discovery. Incident response procedures are maintained separately.</p>
+
+                        <h2>8. Training</h2>
+                        <p>All users must complete security awareness training annually and acknowledge understanding of this policy.</p>
+
+                        <h2>9. Exceptions</h2>
+                        <p>Exceptions to this policy must be documented, risk-assessed, and approved by the ${formData.ciso} with compensating controls implemented where necessary.</p>
+                    `;
+            }
+        }
+
+        function getReviewDate() {
+            const today = new Date();
+            const reviewMap = {
+                'quarterly': 3,
+                'semi-annual': 6,
+                'annual': 12
+            };
+            const months = reviewMap[formData.accessReview] || 12;
+            today.setMonth(today.getMonth() + months);
+            return today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+
+        function downloadPolicy() {
+            const policyText = document.getElementById('policyDocument').innerText;
+            const blob = new Blob([policyText], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${formData.companyName.replace(/\s+/g, '_')}_Security_Policy.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Add checkbox selection visual feedback
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.checkbox-item input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        this.closest('.checkbox-item').classList.add('selected');
+                    } else {
+                        this.closest('.checkbox-item').classList.remove('selected');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
