@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing Email Detector</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header p {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .panel h2 {
+            color: #f59e0b;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #475569;
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #f59e0b;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 150px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .analyze-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #000;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.3);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .results {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .threat-level {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .threat-meter {
+            width: 100%;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .threat-fill {
+            height: 100%;
+            border-radius: 20px;
+            transition: all 1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .threat-low {
+            background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+        }
+
+        .threat-medium {
+            background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .threat-high {
+            background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        .threat-critical {
+            background: linear-gradient(90deg, #991b1b 0%, #7f1d1d 100%);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .risk-score {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+
+        .risk-label {
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .indicators {
+            margin-top: 30px;
+        }
+
+        .indicators h3 {
+            color: #f59e0b;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .indicator-item {
+            background: rgba(0, 0, 0, 0.2);
+            border-left: 4px solid;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+        }
+
+        .indicator-item.critical {
+            border-color: #ef4444;
+        }
+
+        .indicator-item.warning {
+            border-color: #f59e0b;
+        }
+
+        .indicator-item.info {
+            border-color: #3b82f6;
+        }
+
+        .indicator-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .indicator-description {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .ioc-section {
+            margin-top: 30px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .ioc-section h3 {
+            color: #f59e0b;
+            margin-bottom: 15px;
+        }
+
+        .ioc-list {
+            list-style: none;
+        }
+
+        .ioc-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ioc-type {
+            background: #3b82f6;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .recommendations {
+            margin-top: 30px;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .recommendations h3 {
+            color: #22c55e;
+            margin-bottom: 15px;
+        }
+
+        .recommendations ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .recommendations li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .recommendations li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #22c55e;
+            font-weight: bold;
+        }
+
+        .sample-emails {
+            margin-top: 20px;
+        }
+
+        .sample-btn {
+            background: rgba(148, 163, 184, 0.2);
+            border: 1px solid #475569;
+            color: #cbd5e1;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .sample-btn:hover {
+            background: rgba(148, 163, 184, 0.3);
+            border-color: #f59e0b;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 968px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <span>🎣</span>
+                Phishing Email Detector
+            </h1>
+            <p>AI-powered analysis to identify phishing attempts and extract threat indicators</p>
+        </div>
+
+        <div class="main-grid">
+            <div class="panel">
+                <h2>📧 Email Analysis</h2>
+                
+                <div class="form-group">
+                    <label for="senderEmail">Sender Email Address</label>
+                    <input type="email" id="senderEmail" placeholder="sender@example.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="subject">Email Subject</label>
+                    <input type="text" id="subject" placeholder="Urgent: Account Verification Required">
+                </div>
+
+                <div class="form-group">
+                    <label for="emailBody">Email Body</label>
+                    <textarea id="emailBody" placeholder="Paste the email content here..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="links">Links/URLs (one per line)</label>
+                    <textarea id="links" rows="4" placeholder="https://example.com&#10;http://suspicious-link.com"></textarea>
+                </div>
+
+                <button class="analyze-btn" onclick="analyzeEmail()">
+                    🔍 Analyze Email
+                </button>
+
+                <div class="sample-emails">
+                    <p style="color: #94a3b8; margin-bottom: 10px; font-size: 0.9rem;">Try sample emails:</p>
+                    <button class="sample-btn" onclick="loadSample(1)">Banking Phish</button>
+                    <button class="sample-btn" onclick="loadSample(2)">CEO Fraud</button>
+                    <button class="sample-btn" onclick="loadSample(3)">Package Delivery</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>⚠️ Analysis Tips</h2>
+                <div style="color: #94a3b8; line-height: 1.8;">
+                    <p style="margin-bottom: 15px;"><strong style="color: #f59e0b;">What we analyze:</strong></p>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="padding: 8px 0;">🔍 Sender email reputation and spoofing</li>
+                        <li style="padding: 8px 0;">🔗 Suspicious links and domain mismatches</li>
+                        <li style="padding: 8px 0;">⚡ Urgency tactics and psychological manipulation</li>
+                        <li style="padding: 8px 0;">📝 Grammar, spelling, and formatting issues</li>
+                        <li style="padding: 8px 0;">🎭 Impersonation of legitimate companies</li>
+                        <li style="padding: 8px 0;">💰 Financial requests and credential harvesting</li>
+                    </ul>
+
+                    <p style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #475569;">
+                        <strong style="color: #f59e0b;">Common Red Flags:</strong>
+                    </p>
+                    <ul style="list-style: none; padding: 0; margin-top: 10px;">
+                        <li style="padding: 5px 0;">• Generic greetings ("Dear Customer")</li>
+                        <li style="padding: 5px 0;">• Threats of account closure</li>
+                        <li style="padding: 5px 0;">• Requests for personal information</li>
+                        <li style="padding: 5px 0;">• Unexpected attachments</li>
+                        <li style="padding: 5px 0;">• Mismatched URLs (hover to check)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="results" class="results hidden">
+            <div class="threat-level">
+                <h2 style="color: #f59e0b; margin-bottom: 10px;">Threat Assessment</h2>
+                <div class="risk-score" id="riskScore">0%</div>
+                <div class="risk-label" id="riskLabel">ANALYZING...</div>
+                <div class="threat-meter">
+                    <div class="threat-fill" id="threatFill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="indicators" id="indicators">
+                <h3>🚨 Detected Indicators</h3>
+                <div id="indicatorsList"></div>
+            </div>
+
+            <div class="ioc-section" id="iocSection">
+                <h3>🔎 Indicators of Compromise (IOCs)</h3>
+                <ul class="ioc-list" id="iocList"></ul>
+            </div>
+
+            <div class="recommendations">
+                <h3>✅ Recommended Actions</h3>
+                <ul id="recommendationsList"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const sampleEmails = {
+            1: {
+                sender: "security@paypa1-verify.com",
+                subject: "URGENT: Your PayPal Account Has Been Limited",
+                body: "Dear Valued Customer,\n\nWe have detected unusual activity on your PayPal account. For your security, we have temporarily limited your account access.\n\nTo restore full access, please verify your identity immediately by clicking the link below:\n\nVerify My Account Now\n\nFailure to verify within 24 hours will result in permanent account closure.\n\nThank you for your cooperation.\n\nPayPal Security Team",
+                links: "http://paypa1-verify.com/secure-login\nhttps://account-restore.com/paypal"
+            },
+            2: {
+                sender: "ceo@company-mail.xyz",
+                subject: "Re: Urgent Wire Transfer Needed",
+                body: "Hi,\n\nI'm currently in a meeting with a potential client and need you to process an urgent wire transfer. Our regular finance person is out today.\n\nPlease wire $15,000 to:\nAccount: 987654321\nRouting: 123456789\nBank: International Business Bank\n\nThis is time-sensitive for closing the deal. I'll explain more when I'm back in the office.\n\nThanks,\nJohn Smith\nCEO",
+                links: ""
+            },
+            3: {
+                sender: "deliveries@fedex-tracking.net",
+                subject: "Package Delivery Failed - Action Required",
+                body: "Dear Customer,\n\nWe attempted to deliver your package (Tracking: FX1234567890) but no one was available at the delivery address.\n\nYour package contains important documents and requires immediate attention.\n\nClick here to reschedule delivery and update your address:\nReschedule Now\n\nPlease note: Packages not claimed within 48 hours will be returned to sender.\n\nFedEx Customer Service",
+                links: "http://fedex-redelivery.net/track/FX1234567890\nhttps://secure-fedex-tracking.com/update"
+            }
+        };
+
+        function loadSample(id) {
+            const sample = sampleEmails[id];
+            document.getElementById('senderEmail').value = sample.sender;
+            document.getElementById('subject').value = sample.subject;
+            document.getElementById('emailBody').value = sample.body;
+            document.getElementById('links').value = sample.links;
+        }
+
+        function analyzeEmail() {
+            const sender = document.getElementById('senderEmail').value;
+            const subject = document.getElementById('subject').value;
+            const body = document.getElementById('emailBody').value;
+            const links = document.getElementById('links').value;
+
+            if (!sender && !subject && !body) {
+                alert('Please enter email details to analyze');
+                return;
+            }
+
+            const analysis = performAnalysis(sender, subject, body, links);
+            displayResults(analysis);
+        }
+
+        function performAnalysis(sender, subject, body, links) {
+            let riskScore = 0;
+            const indicators = [];
+            const iocs = [];
+            const recommendations = [];
+
+            // Analyze sender
+            if (sender) {
+                if (sender.includes('1') || sender.includes('0') || sender.match(/[^\w@.-]/)) {
+                    riskScore += 25;
+                    indicators.push({
+                        type: 'critical',
+                        title: 'Suspicious Sender Domain',
+                        description: `The sender email "${sender}" contains suspicious characters or number substitutions (e.g., '1' instead of 'l'). This is a common typosquatting technique.`
+                    });
+                    iocs.push({ type: 'Email', value: sender });
+                }
+
+                const suspiciousDomains = ['verify', 'secure', 'account', 'update', 'confirm', 'alert'];
+                if (suspiciousDomains.some(d => sender.toLowerCase().includes(d))) {
+                    riskScore += 15;
+                    indicators.push({
+                        type: 'warning',
+                        title: 'Deceptive Domain Name',
+                        description: 'Sender domain contains trust-building keywords often used in phishing (verify, secure, account, etc.)'
+                    });
+                }
+            }
+
+            // Analyze subject
+            if (subject) {
+                const urgencyWords = ['urgent', 'immediate', 'action required', 'suspended', 'limited', 'verify', 'confirm', 'security alert'];
+                const foundUrgency = urgencyWords.filter(word => subject.toLowerCase().includes(word));
+                
+                if (foundUrgency.length > 0) {
+                    riskScore += 20;
+                    indicators.push({
+                        type: 'warning',
+                        title: 'Urgency Manipulation',
+                        description: `Subject line uses urgency tactics: "${foundUrgency.join(', ')}". Legitimate companies rarely pressure immediate action.`
+                    });
+                }
+            }
+
+            // Analyze body
+            if (body) {
+                const genericGreetings = ['dear customer', 'dear user', 'dear member', 'valued customer', 'hello,'];
+                if (genericGreetings.some(g => body.toLowerCase().includes(g))) {
+                    riskScore += 15;
+                    indicators.push({
+                        type: 'warning',
+                        title: 'Generic Greeting',
+                        description: 'Uses generic greeting instead of your name. Legitimate companies typically personalize emails.'
+                    });
+                }
+
+                const threatWords = ['suspended', 'locked', 'limited', 'closed', 'terminated', 'expired', 'unusual activity'];
+                const foundThreats = threatWords.filter(word => body.toLowerCase().includes(word));
+                if (foundThreats.length > 0) {
+                    riskScore += 20;
+                    indicators.push({
+                        type: 'critical',
+                        title: 'Account Threat Language',
+                        description: `Contains threatening language: "${foundThreats.join(', ')}". Classic phishing tactic to create panic.`
+                    });
+                }
+
+                const requestWords = ['verify your', 'confirm your', 'update your', 'click here', 'click below', 'wire transfer', 'send money'];
+                const foundRequests = requestWords.filter(word => body.toLowerCase().includes(word));
+                if (foundRequests.length > 0) {
+                    riskScore += 25;
+                    indicators.push({
+                        type: 'critical',
+                        title: 'Suspicious Request',
+                        description: `Requests sensitive actions: "${foundRequests.join(', ')}". Never respond to such requests via email.`
+                    });
+                }
+
+                // Check for poor grammar
+                const grammarIssues = [
+                    body.match(/\s{2,}/g), // Multiple spaces
+                    body.match(/[.!?]{2,}/g), // Multiple punctuation
+                ];
+                if (grammarIssues.some(issue => issue && issue.length > 2)) {
+                    riskScore += 10;
+                    indicators.push({
+                        type: 'info',
+                        title: 'Formatting Issues',
+                        description: 'Contains unusual spacing or punctuation that may indicate automated translation or rushed creation.'
+                    });
+                }
+            }
+
+            // Analyze links
+            if (links) {
+                const linkArray = links.split('\n').filter(l => l.trim());
+                linkArray.forEach(link => {
+                    const url = link.trim().toLowerCase();
+                    
+                    if (!url.startsWith('https://')) {
+                        riskScore += 15;
+                        indicators.push({
+                            type: 'critical',
+                            title: 'Insecure Link',
+                            description: `Link "${url}" doesn't use HTTPS encryption. Legitimate sites use secure connections.`
+                        });
+                    }
+
+                    const suspiciousPatterns = ['-', 'login', 'signin', 'account', 'verify', 'secure', 'update', 'confirm'];
+                    if (suspiciousPatterns.some(p => url.includes(p))) {
+                        riskScore += 10;
+                        indicators.push({
+                            type: 'warning',
+                            title: 'Suspicious URL Pattern',
+                            description: `URL "${url}" contains common phishing keywords.`
+                        });
+                    }
+
+                    iocs.push({ type: 'URL', value: link.trim() });
+                });
+            }
+
+            // Generate recommendations
+            if (riskScore >= 70) {
+                recommendations.push('DO NOT click any links or download attachments');
+                recommendations.push('DO NOT reply or provide any information');
+                recommendations.push('Report this email to your IT security team immediately');
+                recommendations.push('Delete the email from your inbox and trash');
+                recommendations.push('If you clicked any links, change your passwords immediately');
+                recommendations.push('Enable 2FA on all accounts if not already active');
+            } else if (riskScore >= 40) {
+                recommendations.push('Exercise extreme caution before interacting with this email');
+                recommendations.push('Verify sender authenticity through official channels');
+                recommendations.push('Do not click links - navigate directly to official websites');
+                recommendations.push('Contact the company directly using known contact information');
+                recommendations.push('Report suspicious emails to your security team');
+            } else {
+                recommendations.push('Always verify unexpected emails, even if they seem legitimate');
+                recommendations.push('Hover over links to check actual destination before clicking');
+                recommendations.push('Be wary of urgent requests for personal information');
+                recommendations.push('When in doubt, contact the sender through official channels');
+                recommendations.push('Keep your email security software up to date');
+            }
+
+            if (indicators.length === 0) {
+                indicators.push({
+                    type: 'info',
+                    title: 'No Major Red Flags Detected',
+                    description: 'This email appears relatively safe, but always remain vigilant. Sophisticated phishing attempts may not trigger automated detection.'
+                });
+            }
+
+            return {
+                riskScore: Math.min(riskScore, 100),
+                indicators,
+                iocs,
+                recommendations
+            };
+        }
+
+        function displayResults(analysis) {
+            document.getElementById('results').classList.remove('hidden');
+            
+            // Animate risk score
+            const scoreEl = document.getElementById('riskScore');
+            const fillEl = document.getElementById('threatFill');
+            const labelEl = document.getElementById('riskLabel');
+            
+            let currentScore = 0;
+            const targetScore = analysis.riskScore;
+            const interval = setInterval(() => {
+                if (currentScore >= targetScore) {
+                    clearInterval(interval);
+                } else {
+                    currentScore += 2;
+                    scoreEl.textContent = Math.min(currentScore, targetScore) + '%';
+                    fillEl.style.width = Math.min(currentScore, targetScore) + '%';
+                }
+            }, 20);
+
+            // Set threat level
+            let threatClass = 'threat-low';
+            let threatLabel = 'LOW RISK';
+            let labelColor = '#22c55e';
+
+            if (targetScore >= 80) {
+                threatClass = 'threat-critical';
+                threatLabel = 'CRITICAL THREAT';
+                labelColor = '#991b1b';
+            } else if (targetScore >= 60) {
+                threatClass = 'threat-high';
+                threatLabel = 'HIGH RISK';
+                labelColor = '#ef4444';
+            } else if (targetScore >= 30) {
+                threatClass = 'threat-medium';
+                threatLabel = 'MEDIUM RISK';
+                labelColor = '#f59e0b';
+            }
+
+            fillEl.className = 'threat-fill ' + threatClass;
+            labelEl.textContent = threatLabel;
+            labelEl.style.color = labelColor;
+            scoreEl.style.color = labelColor;
+
+            // Display indicators
+            const indicatorsList = document.getElementById('indicatorsList');
+            indicatorsList.innerHTML = analysis.indicators.map(ind => `
+                <div class="indicator-item ${ind.type}">
+                    <div class="indicator-header">
+                        ${ind.type === 'critical' ? '🔴' : ind.type === 'warning' ? '🟡' : '🔵'}
+                        ${ind.title}
+                    </div>
+                    <div class="indicator-description">${ind.description}</div>
+                </div>
+            `).join('');
+
+            // Display IOCs
+            const iocList = document.getElementById('iocList');
+            if (analysis.iocs.length > 0) {
+                iocList.innerHTML = analysis.iocs.map(ioc => `
+                    <li class="ioc-item">
+                        <span>${ioc.value}</span>
+                        <span class="ioc-type">${ioc.type}</span>
+                    </li>
+                `).join('');
+            } else {
+                document.getElementById('iocSection').style.display = 'none';
+            }
+
+            // Display recommendations
+            const recList = document.getElementById('recommendationsList');
+            recList.innerHTML = analysis.recommendations.map(rec => `<li>${rec}</li>`).join('');
+
+            // Scroll to results
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    </script>
+</body>
+</html>
