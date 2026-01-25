@@ -287,7 +287,8 @@ input.focus(); // auto-focus input on load
 
 // Auto-scroll terminal handled in print()
 print("📱 Mobile-ready: input focused, terminal auto-scroll, instructions adjust height.");
-
+// Load the first lesson automatically
+if(!state.training) loadLesson();
 // =====================
 // FINALIZE HTML
 // =====================
