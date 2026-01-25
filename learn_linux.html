@@ -1,150 +1,280 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Learn Linux</title>
+<meta charset="UTF-8">
+<title>Learn Linux</title>
 
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            margin: 0; padding: 0;
-            font-family: monospace;
-            background: #1e1e1e;
-            color: #eee;
-        }
-        #instructions {
-            background: #2e2e2e;
-            padding: 15px;
-            height: 25vh;
-            overflow-y: auto;
-            border-bottom: 2px solid #444;
-        }
-        #terminal {
-            background: black;
-            flex-grow: 1;
-            padding: 10px;
-            color: white;
-            overflow-y: auto;
-            font-size: 14px;
-            line-height: 1.4;
-        }
-        .prompt { color: #0f0; }
-        .cmd { color: #0ff; }
-        .output { color: #ddd; }
-        .hint { color: #ff0; }
-        .success { color: #0f0; font-weight: bold; }
-        .error { color: #f00; }
-    </style>
+<style>
+body {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  background: #1e1e1e;
+  color: #eaeaea;
+  font-family: monospace;
+}
+
+#instructions {
+  padding: 16px;
+  background: #2b2b2b;
+  height: 30vh;
+  overflow-y: auto;
+  border-bottom: 2px solid #444;
+  white-space: pre-line;
+}
+
+#terminal {
+  flex: 1;
+  background: #000;
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.success { color: #00ff88; }
+.hint { color: #ffd866; }
+.error { color: #ff5555; }
+.dim { color: #888; }
+</style>
 </head>
 
 <body>
 
-<div id="instructions">Loading instructions...</div>
+<div id="instructions"></div>
 <pre id="terminal"></pre>
 
 <script>
-const instructionsPanel = document.getElementById("instructions");
-const terminal = document.getElementById("terminal");
-
-// A simple virtual filesystem (initial)
-let fs = {
-    "/": { "home": { "readme.txt": "Welcome to Learn Linux!" } },
-};
-let cwd = "/home";
-
-// A history buffer for terminal
+// =================================================
+// SYSTEM STATE
+// =================================================
+let cwd = "/home/student";
+let user = "student";
 let buffer = "";
 
-// Current lesson index
+let fs = {
+  "/": {
+    home: {
+      student: {
+        "readme.txt": "Welcome to Learn Linux.\nLinux rewards curiosity.",
+      }
+    }
+  }
+};
+
+let state = {
+  lastCmd: "",
+  testProgress: 0
+};
+
+// =================================================
+// LESSONS — LEVEL 1 COMPLETE
+// =================================================
 let lessonIndex = 0;
 
-// Minimal lessons data
 const lessons = [
-    {
-        title: "Level 1 — Hello Linux",
-        text: "Welcome to Level 1!\nType 'pwd' to show your current directory.",
-        goal: { cmd: "pwd" },
-        hint: "Try 'pwd'… it's short for Print Working Directory."
-    },
-    {
-        title: "Level 1 — Listing Files",
-        text: "Great! Now list the files here.",
-        goal: { cmd: "ls" },
-        hint: "Try 'ls' to list files."
-    }
+{
+  title: "Level 1.1 — Where am I?",
+  text: "You are inside a Linux machine.\n\nShow your current directory.",
+  goal: () => state.lastCmd === "pwd",
+  hint: "Use the command: pwd"
+},
+{
+  title: "Level 1.1 — What is here?",
+  text: "List the files in this directory.",
+  goal: () => state.lastCmd === "ls",
+  hint: "Try: ls"
+},
+{
+  title: "Level 1.2 — Move around",
+  text: "Change into the root directory (/).",
+  goal: () => cwd === "/",
+  hint: "Use: cd /"
+},
+{
+  title: "Level 1.2 — Go back home",
+  text: "Return to your home directory.",
+  goal: () => cwd === "/home/student",
+  hint: "Use: cd /home/student"
+},
+{
+  title: "Level 1.3 — Create a file",
+  text: "Create a file named notes.txt.",
+  goal: () => "notes.txt" in resolveDir(cwd),
+  hint: "Use: touch notes.txt"
+},
+{
+  title: "Level 1.3 — Read a file",
+  text: "Read the contents of readme.txt.",
+  goal: () => state.lastCmd === "cat readme.txt",
+  hint: "Use: cat readme.txt"
+},
+{
+  title: "Level 1.4 — Who are you?",
+  text: "Find out which user you are.",
+  goal: () => state.lastCmd === "whoami",
+  hint: "Use: whoami"
+},
+{
+  title: "Level 1.4 — Your identity",
+  text: "Display your user and group IDs.",
+  goal: () => state.lastCmd === "id",
+  hint: "Use: id"
+},
+{
+  title: "🧪 Level 1 Final Test",
+  text:
+`This is a real mini challenge.
+
+Tasks:
+1. Go to the root directory
+2. Return to your home directory
+3. List the files
+4. Read readme.txt
+5. Show which user you are
+
+No hints unless you ask for them.
+Take your time.`,
+  goal: () => state.testProgress >= 5,
+  hint: "Break it down. One task at a time."
+}
 ];
 
+// =================================================
+// UI
+// =================================================
+const instr = document.getElementById("instructions");
+const term = document.getElementById("terminal");
+
 function loadLesson() {
-    const lesson = lessons[lessonIndex];
-    instructionsPanel.textContent = `📘 ${lesson.title}\n\n${lesson.text}`;
+  const l = lessons[lessonIndex];
+  instr.textContent = `📘 ${l.title}\n\n${l.text}`;
 }
 
-// Render initial
-loadLesson();
-renderPrompt();
+function print(text, cls="") {
+  term.textContent += "\n" + text;
+  term.scrollTop = term.scrollHeight;
+}
 
-// Terminal interaction
+function prompt() {
+  term.textContent += `\n$ ${buffer}`;
+  term.scrollTop = term.scrollHeight;
+}
+
+loadLesson();
+prompt();
+
+// =================================================
+// INPUT HANDLING
+// =================================================
 document.addEventListener("keydown", e => {
-    if (e.key === "Enter") {
-        handleCommand(buffer.trim());
-        buffer = "";
-    } else if (e.key === "Backspace") {
-        buffer = buffer.slice(0, -1);
-        renderPrompt();
-    } else if (e.key.length === 1) {
-        buffer += e.key;
-        renderPrompt();
-    }
+  if (e.key === "Enter") {
+    execute(buffer.trim());
+    buffer = "";
+  } else if (e.key === "Backspace") {
+    buffer = buffer.slice(0, -1);
+  } else if (e.key.length === 1) {
+    buffer += e.key;
+  }
+  redraw();
 });
 
-function renderPrompt() {
-    terminal.textContent = `\n$ ${buffer}`;
-    terminal.scrollTop = terminal.scrollHeight;
+function redraw() {
+  term.textContent = term.textContent.split("\n$")[0];
+  prompt();
 }
 
-function printOutput(text, cls = "output") {
-    terminal.textContent += `\n<span class="${cls}">${text}</span>`;
+// =================================================
+// COMMAND EXECUTION
+// =================================================
+function execute(input) {
+  state.lastCmd = input;
+  print(`$ ${input}`);
+
+  const parts = input.split(" ");
+  const cmd = parts[0];
+  const arg = parts.slice(1).join(" ");
+
+  if (cmd === "help" || input.endsWith("-h")) {
+    print("Commands: pwd, ls, cd, touch, cat, whoami, id, hint");
+  }
+  else if (cmd === "hint") {
+    print(lessons[lessonIndex].hint, "hint");
+  }
+  else if (cmd === "pwd") {
+    print(cwd);
+  }
+  else if (cmd === "ls") {
+    print(Object.keys(resolveDir(cwd)).join(" "));
+  }
+  else if (cmd === "cd") {
+    if (arg === "/") cwd = "/";
+    else if (arg === "..") cwd = cwd.split("/").slice(0,-1).join("/") || "/";
+    else cwd = cwd + "/" + arg;
+  }
+  else if (cmd === "touch") {
+    resolveDir(cwd)[arg] = "";
+  }
+  else if (cmd === "cat") {
+    let dir = resolveDir(cwd);
+    if (dir[arg]) print(dir[arg]);
+    else print("No such file", "error");
+  }
+  else if (cmd === "whoami") {
+    print(user);
+  }
+  else if (cmd === "id") {
+    print(`uid=1000(${user}) gid=1000(${user}) groups=1000(${user})`);
+  }
+  else {
+    print("command not found", "error");
+  }
+
+  // Final test tracking
+  if (lessons[lessonIndex].title.includes("Final Test")) {
+    if (input === "cd /") state.testProgress++;
+    if (input === "cd /home/student") state.testProgress++;
+    if (input === "ls") state.testProgress++;
+    if (input === "cat readme.txt") state.testProgress++;
+    if (input === "whoami") state.testProgress++;
+  }
+
+  checkLesson();
 }
 
-function handleCommand(cmd) {
-    printOutput(`$ ${cmd}`, "cmd");
-  
-    if (cmd === "help" || cmd === "-h" || cmd.endsWith(" -h")) {
-        printOutput("Available commands: pwd, ls, help, hint", "output");
-    } else if (cmd === "hint") {
-        printOutput(lessons[lessonIndex].hint, "hint");
-    }
-    else if (cmd === "pwd") {
-        printOutput(cwd);
-        checkGoal(cmd);
-    }
-    else if (cmd === "ls") {
-        const parts = cwd.split("/").filter(x=>x);
-        let node = fs["/"];
-        for (let p of parts) node = node[p] || {};
-        printOutput(Object.keys(node).join(" "));
-        checkGoal(cmd);
-    }
-    else {
-        printOutput(`Command not found: ${cmd}`, "error");
-    }
-    renderPrompt();
+// =================================================
+// HELPERS
+// =================================================
+function resolveDir(path) {
+  let parts = path.split("/").filter(Boolean);
+  let cur = fs["/"];
+  for (let p of parts) cur = cur[p];
+  return cur;
 }
 
-function checkGoal(cmd) {
-    const goal = lessons[lessonIndex].goal;
-    if (goal.cmd === cmd) {
-        printOutput("✅ Correct! Type 'continue' to move on", "success");
+function checkLesson() {
+  if (lessons[lessonIndex].goal()) {
+    print("✅ Nice work! Type 'continue' to move on.", "success");
+  }
+  if (state.lastCmd === "continue") {
+    lessonIndex++;
+    if (lessonIndex < lessons.length) {
+      loadLesson();
+    } else {
+      instr.textContent =
+`🎉 LEVEL 1 COMPLETE
+
+You can now:
+✔ Navigate directories
+✔ Create and read files
+✔ Understand where you are
+✔ Know who you are in the system
+
+You didn’t memorize Linux.
+You *used* Linux.
+
+Next up:
+LEVEL 2 — Files, permissions, and control 🛠️`;
     }
-    if (cmd === "continue") {
-        lessonIndex++;
-        if (lessonIndex < lessons.length) {
-            loadLesson();
-        } else {
-            printOutput("🏁 You've finished all current lessons!", "success");
-        }
-    }
+  }
 }
 </script>
 
