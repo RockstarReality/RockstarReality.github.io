@@ -28,12 +28,21 @@ body { margin:0; font-family: monospace; display:flex; flex-direction:column; he
 </div>
 
 <script>
-// STATE
+// =====================
+// SYSTEM STATE
+// =====================
 let cwd="/home/student", user="student";
-let fs={ "/":{ home:{ student:{ "readme.txt":{content:"Welcome to Learn Linux.\nLinux rewards curiosity.", perm:"rw-r--r--", type:"text"} } } } };
+let fs={
+  "/": { home:{ student:{
+    "readme.txt":{content:"Welcome to Learn Linux.\nLinux rewards curiosity.", perm:"rw-r--r--", type:"text"},
+    "script.sh":{content:"# /bin/bash\necho Hello", perm:"rw-------", type:"shell script"}
+  }}}
+};
 let state={ lastCmd:"", testProgress:0 };
 
+// =====================
 // LESSONS
+// =====================
 let lessonIndex=0;
 const lessons=[
 { title:"Level 1.1 — Where am I?", text:"Show your current directory.", goal:()=>state.lastCmd==="pwd", hint:"pwd" },
@@ -51,41 +60,69 @@ const lessons=[
 { title:"Level 2.2 — File type", text:"What is script.sh?", goal:()=>state.lastCmd==="file script.sh", hint:"file script.sh" },
 { title:"Level 2.3 — Make executable", text:"Make script.sh executable for you.", goal:()=>resolveDir(cwd)["script.sh"].perm.startsWith("rwx"), hint:"chmod u+x script.sh" },
 { title:"Level 2.4 — Locate command", text:"Where is ls?", goal:()=>state.lastCmd==="which ls", hint:"which ls" },
-{ title:"🧪 Level 2 Final Test", text:"List permissions, file type, chmod, which command.", goal:()=>state.testProgress>=4, hint:"Step by step." }
+{ title:"🧪 Level 2 Final Test", text:"List permissions, file type, chmod, which command.", goal:()=>state.testProgress>=4, hint:"Step by step." },
+
+// LEVEL 3 — Download safely
+{ title:"Level 3.1 — Download a file", text:"Simulate downloading a file using wget.", goal:()=>resolveDir(cwd)["downloaded.txt"], hint:"wget http://example.com/file.txt" },
+{ title:"Level 3.2 — Use curl", text:"Simulate downloading another file with curl.", goal:()=>resolveDir(cwd)["curlfile.txt"], hint:"curl -O http://example.com/other.txt" },
+{ title:"Level 3.3 — Verify download", text:"Check file type of downloaded.txt.", goal:()=>state.lastCmd==="file downloaded.txt", hint:"file downloaded.txt" },
+{ title:"Level 3.4 — Safe practice", text:"Do NOT execute downloads yet. Understand file location and permissions.", goal:()=>true, hint:"ls -l to check files" },
+{ title:"🧪 Level 3 Final Test", text:"Use wget, curl, check file type. Practice safe handling.", goal:()=>state.testProgress>=3, hint:"Step by step, remember safety." }
 ];
 
+// =====================
 // UI
+// =====================
 const instr=document.getElementById("instructions"), term=document.getElementById("terminal"), input=document.getElementById("commandInput");
 
 function loadLesson(){ instr.textContent=`📘 ${lessons[lessonIndex].title}\n\n${lessons[lessonIndex].text}`; }
 function print(txt,cls=""){ let d=document.createElement("div"); d.textContent=txt; if(cls)d.className=cls; term.appendChild(d); term.scrollTop=term.scrollHeight; }
 
+// =====================
+// LOCAL STORAGE (Progress Save)
+// =====================
+function saveProgress(){
+  localStorage.setItem("learnLinux", JSON.stringify({lessonIndex,state,cwd,fs}));
+}
+function loadProgress(){
+  let data=localStorage.getItem("learnLinux");
+  if(data){
+    let obj=JSON.parse(data);
+    lessonIndex=obj.lessonIndex||0;
+    state=obj.state||{lastCmd:"",testProgress:0};
+    cwd=obj.cwd||"/home/student";
+    fs=obj.fs||fs;
+  }
+}
+loadProgress();
 loadLesson();
-print("Welcome to Learn Linux. Press Enter to continue after each lesson.");
+print("Welcome to Learn Linux! Press Enter to continue after each lesson.");
 
-// COMMAND
+// =====================
+// INPUT
+// =====================
 input.addEventListener("keydown", e=>{
   if(e.key==="Enter"){
     execute(input.value.trim());
     input.value=""; input.focus();
+    saveProgress();
   }
 });
 document.body.addEventListener("click",()=>input.focus());
 
+// =====================
+// COMMAND EXECUTION
+// =====================
 function execute(cmdline){
   state.lastCmd=cmdline;
   if(cmdline) print(`$ ${cmdline}`,"dim");
-
   let [cmd,...args]=cmdline.split(" ");
   let arg=args.join(" ");
 
-  // HELP
-  if(cmd==="help"||cmdline.endsWith("-h")) print("Commands: pwd, ls, cd, touch, cat, whoami, id, ls -l, stat, chmod, file, which, hint");
+  if(cmd==="help"||cmdline.endsWith("-h")) print("Commands: pwd, ls, ls -l, cd, touch, cat, whoami, id, stat, chmod, file, which, wget, curl, hint, skip");
 
-  // HINT
   else if(cmd==="hint") print(lessons[lessonIndex].hint,"hint");
 
-  // COMMANDS
   else if(cmd==="pwd") print(cwd);
   else if(cmd==="ls"&&args[0]==="-l") Object.entries(resolveDir(cwd)).forEach(([n,f])=>print(`${f.perm} ${user} ${n}`));
   else if(cmd==="ls") print(Object.keys(resolveDir(cwd)).join(" "));
@@ -98,15 +135,26 @@ function execute(cmdline){
   else if(cmd==="chmod"){ let f=resolveDir(cwd)[args[1]]; if(f && args[0]==="u+x"){ f.perm="rwx------"; print("Permissions updated"); } else print("Invalid chmod","error"); }
   else if(cmd==="file"){ let f=resolveDir(cwd)[arg]; f?print(`${arg}: ${f.type}`):print("No such file","error"); }
   else if(cmd==="which") print(`/usr/bin/${arg}`);
+  else if(cmd==="wget"){ resolveDir(cwd)["downloaded.txt"]={content:"Downloaded content",perm:"rw-r--r--",type:"text"}; print("File downloaded"); }
+  else if(cmd==="curl"){ resolveDir(cwd)["curlfile.txt"]={content:"Downloaded content",perm:"rw-r--r--",type:"text"}; print("File downloaded"); }
+
+  // SKIP COMMAND
+  else if(cmd==="skip"){
+    if(args[0]){
+      let target=parseInt(args[0]);
+      if(!isNaN(target)&&target>=0&&target<lessons.length){ lessonIndex=target; state.testProgress=0; loadLesson(); print(`🚀 Skipped to lesson ${target}!`,"hint"); }
+      else print("Invalid lesson number","error");
+    } else { lessonIndex++; state.testProgress=0; if(lessonIndex<lessons.length) loadLesson(); else instr.textContent="🎉 All lessons completed!"; print("🚀 Skipped to next lesson!","hint"); }
+  }
+
   else if(cmdline) print("command not found","error");
 
   // FINAL TEST TRACKING
   if(lessons[lessonIndex]?.title.includes("Final")){
-    if(cmdline==="pwd"||cmdline==="ls"||cmdline==="cd /"||cmdline==="cd /home/student"||cmdline==="cat readme.txt"||cmdline==="whoami") state.testProgress++;
-    if(cmdline==="ls -l"||cmdline==="file script.sh"||cmdline==="chmod u+x script.sh"||cmdline==="which ls") state.testProgress++;
+    if(["pwd","ls","cd /","cd /home/student","cat readme.txt","whoami","ls -l","file script.sh","chmod u+x script.sh","which ls","wget","curl","file downloaded.txt"].includes(cmdline)) state.testProgress++;
   }
 
-  // AUTO CONTINUE
+  // AUTO CONTINUE ON EMPTY INPUT
   if(lessons[lessonIndex]?.goal() && !cmdline){
     lessonIndex++; state.testProgress=0;
     if(lessonIndex<lessons.length) loadLesson();
@@ -116,7 +164,11 @@ function execute(cmdline){
   if(lessons[lessonIndex]?.goal()) print("✅ Well done. Press Enter to continue.","success");
 }
 
+// =====================
+// HELPERS
+// =====================
 function resolveDir(path){ let p=path.split("/").filter(Boolean); let c=fs["/"]; for(let x of p)c=c[x]; return c; }
+
 </script>
 </body>
 </html>
