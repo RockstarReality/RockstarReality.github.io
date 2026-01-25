@@ -7,7 +7,7 @@
 <style>
 *{box-sizing:border-box;}
 body{margin:0;font-family:monospace;display:flex;flex-direction:column;height:100vh;background:#1e1e1e;color:#eaeaea;}
-#instructions{padding:0.8rem;background:#2b2b2b;min-height:18vh;max-height:22vh;overflow-y:auto;border-bottom:2px solid #444;white-space: pre-line;}
+#instructions{padding:0.8rem;background:#2b2b2b;min-height:16vh;max-height:22vh;overflow-y:auto;border-bottom:2px solid #444;white-space: pre-line;}
 #terminal{flex:1;padding:0.75rem;background:#000;overflow-y:auto;font-size:0.9rem;line-height:1.4;}
 #input-bar{display:flex;padding:0.5rem;background:#111;border-top:2px solid #333;}
 #prompt{color:#00ff88;margin-right:0.3rem;}
@@ -40,7 +40,7 @@ body{margin:0;font-family:monospace;display:flex;flex-direction:column;height:10
 // =====================
 let cwd="/home/student", user="student";
 let fs={"/":{home:{student:{"readme.txt":{content:"Welcome to Learn Linux.\nLinux rewards curiosity.",perm:"rw-r--r--",type:"text"},"script.sh":{content:"# /bin/bash\necho Hello",perm:"rw-------",type:"shell script"}}}}};
-let state={lastCmd:"", testProgress:0, packages:[], mistakes:{}, training: false, trainingQueue: [], trainingIndex:0, hintCount:0};
+let state={lastCmd:"", testProgress:0, packages:[], mistakes:{}, training:false, trainingQueue:[], trainingIndex:0, hintCount:0};
 
 // =====================
 // LESSONS 1-6
@@ -48,48 +48,40 @@ let state={lastCmd:"", testProgress:0, packages:[], mistakes:{}, training: false
 let lessonIndex=0;
 const lessons=[
 { title:"Level 1.1 — Where am I?", text:"Show your current directory.", goal:()=>state.lastCmd==="pwd", hint:"pwd" },
-{ title:"Level 1.1 — What is here?", text:"List the files in this directory.", goal:()=>state.lastCmd==="ls", hint:"ls" },
-{ title:"Level 1.2 — Move around", text:"Change into root /.", goal:()=>cwd==="/", hint:"cd /" },
-{ title:"Level 1.2 — Go back home", text:"Return to home.", goal:()=>cwd==="/home/student", hint:"cd /home/student" },
-{ title:"Level 1.3 — Create a file", text:"Create notes.txt.", goal:()=>resolveDir(cwd)["notes.txt"], hint:"touch notes.txt" },
-{ title:"Level 1.3 — Read a file", text:"Read readme.txt.", goal:()=>state.lastCmd==="cat readme.txt", hint:"cat readme.txt" },
-{ title:"Level 1.4 — Who are you?", text:"Show your user.", goal:()=>state.lastCmd==="whoami", hint:"whoami" },
-{ title:"Level 1.4 — Identity details", text:"Show UID/GID.", goal:()=>state.lastCmd==="id", hint:"id" },
-{ title:"🧪 Level 1 Final Test", text:"Final mini challenge: navigate, read files, show user.", goal:()=>state.testProgress>=5, hint:"Take one command at a time." },
+{ title:"Level 1.2 — List files", text:"List the files in this directory.", goal:()=>state.lastCmd==="ls", hint:"ls" },
+{ title:"Level 1.3 — Move around", text:"Change into root /.", goal:()=>cwd==="/", hint:"cd /" },
+{ title:"Level 1.4 — Go back home", text:"Return to home.", goal:()=>cwd==="/home/student", hint:"cd /home/student" },
+{ title:"Level 1.5 — Create a file", text:"Create notes.txt.", goal:()=>resolveDir(cwd)["notes.txt"], hint:"touch notes.txt" },
+{ title:"Level 1.6 — Read a file", text:"Read readme.txt.", goal:()=>state.lastCmd==="cat readme.txt", hint:"cat readme.txt" },
+{ title:"Level 2.1 — Who are you?", text:"Show your user.", goal:()=>state.lastCmd==="whoami", hint:"whoami" },
+{ title:"Level 2.2 — Identity details", text:"Show UID/GID.", goal:()=>state.lastCmd==="id", hint:"id" },
+{ title:"Level 2 Final Test", text:"Navigate, list, create/read files, show user.", goal:()=>state.testProgress>=5, hint:"Take one command at a time." },
 
-{ title:"Level 2.1 — Long listing", text:"List files with details.", goal:()=>state.lastCmd==="ls -l", hint:"ls -l" },
-{ title:"Level 2.2 — File type", text:"What is script.sh?", goal:()=>state.lastCmd==="file script.sh", hint:"file script.sh" },
-{ title:"Level 2.3 — Make executable", text:"Make script.sh executable for you.", goal:()=>resolveDir(cwd)["script.sh"].perm.startsWith("rwx"), hint:"chmod u+x script.sh" },
-{ title:"Level 2.4 — Locate command", text:"Where is ls?", goal:()=>state.lastCmd==="which ls", hint:"which ls" },
-{ title:"🧪 Level 2 Final Test", text:"List permissions, file type, chmod, which command.", goal:()=>state.testProgress>=4, hint:"Step by step." },
+{ title:"Level 3.1 — Long listing", text:"List files with details.", goal:()=>state.lastCmd==="ls -l", hint:"ls -l" },
+{ title:"Level 3.2 — File type", text:"What is script.sh?", goal:()=>state.lastCmd==="file script.sh", hint:"file script.sh" },
+{ title:"Level 3.3 — Make executable", text:"Make script.sh executable for you.", goal:()=>resolveDir(cwd)["script.sh"].perm.startsWith("rwx"), hint:"chmod u+x script.sh" },
+{ title:"Level 3.4 — Locate command", text:"Where is ls?", goal:()=>state.lastCmd==="which ls", hint:"which ls" },
+{ title:"Level 3 Final Test", text:"List permissions, file type, chmod, which command.", goal:()=>state.testProgress>=4, hint:"Step by step." },
 
-{ title:"Level 3.1 — Download a file", text:"Simulate downloading a file using wget.", goal:()=>resolveDir(cwd)["downloaded.txt"], hint:"wget http://example.com/file.txt" },
-{ title:"Level 3.2 — Use curl", text:"Simulate downloading another file with curl.", goal:()=>resolveDir(cwd)["curlfile.txt"], hint:"curl -O http://example.com/other.txt" },
-{ title:"Level 3.3 — Verify download", text:"Check file type of downloaded.txt.", goal:()=>state.lastCmd==="file downloaded.txt", hint:"file downloaded.txt" },
-{ title:"Level 3.4 — Safe practice", text:"Do NOT execute downloads yet. Understand file location and permissions.", goal:()=>true, hint:"ls -l to check files" },
-{ title:"🧪 Level 3 Final Test", text:"Use wget, curl, check file type. Practice safe handling.", goal:()=>state.testProgress>=3, hint:"Step by step." },
+{ title:"Level 4.1 — Download a file", text:"Simulate downloading a file using wget.", goal:()=>resolveDir(cwd)["downloaded.txt"], hint:"wget http://example.com/file.txt" },
+{ title:"Level 4.2 — Use curl", text:"Simulate downloading another file with curl.", goal:()=>resolveDir(cwd)["curlfile.txt"], hint:"curl -O http://example.com/other.txt" },
+{ title:"Level 4.3 — Verify download", text:"Check file type of downloaded.txt.", goal:()=>state.lastCmd==="file downloaded.txt", hint:"file downloaded.txt" },
+{ title:"Level 4 Final Test", text:"Use wget, curl, check file type. Practice safe handling.", goal:()=>state.testProgress>=3, hint:"Step by step." },
 
-{ title:"Level 4.1 — Update package list", text:"Update the system package list using apt update.", goal:()=>state.lastCmd==="apt update", hint:"apt update" },
-{ title:"Level 4.2 — Install a package", text:"Install a package (simulate).", goal:()=>state.packages.includes("nano"), hint:"apt install nano" },
-{ title:"Level 4.3 — List installed packages", text:"See installed packages with dpkg -l.", goal:()=>state.lastCmd==="dpkg -l", hint:"dpkg -l" },
-{ title:"Level 4.4 — Upgrade packages", text:"Upgrade installed packages.", goal:()=>state.lastCmd==="apt upgrade", hint:"apt upgrade" },
-{ title:"🧪 Level 4 Final Test", text:"Update, install, list packages, upgrade safely.", goal:()=>state.testProgress>=4, hint:"Follow the commands step by step." },
+{ title:"Level 5.1 — Update package list", text:"Update the system package list using apt update.", goal:()=>state.lastCmd==="apt update", hint:"apt update" },
+{ title:"Level 5.2 — Install a package", text:"Install a package (simulate).", goal:()=>state.packages.includes("nano"), hint:"apt install nano" },
+{ title:"Level 5.3 — List installed packages", text:"See installed packages with dpkg -l.", goal:()=>state.lastCmd==="dpkg -l", hint:"dpkg -l" },
+{ title:"Level 5.4 — Upgrade packages", text:"Upgrade installed packages.", goal:()=>state.lastCmd==="apt upgrade", hint:"apt upgrade" },
+{ title:"Level 5 Final Test", text:"Update, install, list packages, upgrade safely.", goal:()=>state.testProgress>=4, hint:"Step by step." },
 
-{ title:"Level 5.1 — List processes", text:"Show running processes.", goal:()=>state.lastCmd==="ps aux", hint:"ps aux" },
-{ title:"Level 5.2 — Check memory", text:"Show memory usage.", goal:()=>state.lastCmd==="free -h", hint:"free -h" },
-{ title:"Level 5.3 — Disk usage", text:"Show disk usage.", goal:()=>state.lastCmd==="df -h", hint:"df -h" },
-{ title:"Level 5.4 — Schedule a cron job", text:"Simulate adding a cron job.", goal:()=>state.lastCmd==="crontab -l", hint:"crontab -l" },
-{ title:"Level 5.5 — Network info", text:"Check IP addresses.", goal:()=>state.lastCmd==="ip addr", hint:"ip addr" },
-{ title:"🧪 Level 5 Final Test", text:"Processes, memory, disk, cron, network.", goal:()=>state.testProgress>=5, hint:"Step by step." },
-
-{ title:"Level 6.1 — Create a script", text:"Create a script file script.sh using touch or nano.", goal:()=>resolveDir(cwd)["script.sh"], hint:"touch script.sh" },
-{ title:"Level 6.2 — Edit script", text:"Simulate editing script.sh and adding echo 'Hello World'.", goal:()=>resolveDir(cwd)["script.sh"].content.includes("echo 'Hello World'"), hint:"nano script.sh" },
-{ title:"Level 6.3 — Make executable", text:"Make script.sh executable.", goal:()=>resolveDir(cwd)["script.sh"].perm.startsWith("rwx"), hint:"chmod u+x script.sh" },
-{ title:"Level 6.4 — Run script", text:"Run script.sh using bash.", goal:()=>state.lastCmd==="bash script.sh", hint:"bash script.sh" },
-{ title:"Level 6.5 — Loops and variables", text:"Simulate adding a loop with variables in script.sh.", goal:()=>resolveDir(cwd)["script.sh"].content.includes("for"), hint:"nano script.sh" },
-{ title:"🧪 Level 6 Final Test", text:"Create, edit, chmod, run scripts, use basic loops/variables.", goal:()=>state.testProgress>=5, hint:"Step by step." }
+{ title:"Level 6.1 — List processes", text:"Show running processes.", goal:()=>state.lastCmd==="ps aux", hint:"ps aux" },
+{ title:"Level 6.2 — Check memory", text:"Show memory usage.", goal:()=>state.lastCmd==="free -h", hint:"free -h" },
+{ title:"Level 6.3 — Disk usage", text:"Show disk usage.", goal:()=>state.lastCmd==="df -h", hint:"df -h" },
+{ title:"Level 6.4 — Schedule a cron job", text:"Simulate adding a cron job.", goal:()=>state.lastCmd==="crontab -l", hint:"crontab -l" },
+{ title:"Level 6.5 — Network info", text:"Check IP addresses.", goal:()=>state.lastCmd==="ip addr", hint:"ip addr" },
+{ title:"Level 6 Final Test", text:"Processes, memory, disk, cron, network.", goal:()=>state.testProgress>=5, hint:"Step by step." }
 ];
-  // =====================
+// =====================
 // UI ELEMENTS
 // =====================
 const instr = document.getElementById("instructions");
@@ -311,7 +303,51 @@ function loadTrainingLesson(){
     }
     let l=state.trainingQueue[state.trainingIndex];
     instr.textContent=`🎯 Training: ${l.title}\n\n${l.text}`;
+      }
+  // =====================
+// LESSONS 7-10 (Advanced)
+// =====================
+lessons.push(
+{ title:"Level 7.1 — Loops in scripts", text:"Add a for loop in script.sh that prints numbers 1-5.", goal:()=>resolveDir(cwd)["script.sh"].content.includes("for"), hint:"for i in 1 2 3 4 5; do echo $i; done" },
+{ title:"Level 7.2 — Variables", text:"Use a variable in script.sh to store a message and echo it.", goal:()=>resolveDir(cwd)["script.sh"].content.includes("msg="), hint:"msg='Hello'; echo $msg" },
+{ title:"🧪 Level 7 Final Test", text:"Write a script using a loop and variable. Run it.", goal:()=>state.testProgress>=2, hint:"Step by step." },
+
+{ title:"Level 8.1 — Redirection", text:"Redirect output of echo 'Hello' to hello.txt.", goal:()=>resolveDir(cwd)["hello.txt"], hint:"echo 'Hello' > hello.txt" },
+{ title:"Level 8.2 — Pipes", text:"Pipe output of echo 'one two three' to grep 'two'.", goal:()=>state.lastCmd==="echo 'one two three' | grep 'two'", hint:"Use | grep" },
+{ title:"Level 8.3 — Filters", text:"Use awk to print the first column of a text file.", goal:()=>state.lastCmd.startsWith("awk"), hint:"awk '{print $1}' file.txt" },
+{ title:"🧪 Level 8 Final Test", text:"Use redirection, pipes, and filters on sample text.", goal:()=>state.testProgress>=3, hint:"Try one at a time." },
+
+{ title:"Level 9.1 — File ownership", text:"Simulate changing ownership of notes.txt to another user.", goal:()=>state.lastCmd==="chown user:group notes.txt", hint:"chown user:group notes.txt" },
+{ title:"Level 9.2 — Permissions review", text:"Check permissions and explain meaning.", goal:()=>state.lastCmd==="stat notes.txt", hint:"stat notes.txt" },
+{ title:"Level 9.3 — Sudo simulation", text:"Run a command with elevated privileges.", goal:()=>state.lastCmd.startsWith("sudo"), hint:"sudo ls /root" },
+{ title:"Level 9.4 — Network commands", text:"Ping 127.0.0.1 and check network info.", goal:()=>state.lastCmd==="ping 127.0.0.1" || state.lastCmd==="ip addr", hint:"ping, ip addr" },
+{ title:"🧪 Level 9 Final Test", text:"Ownership, permissions, sudo, networking.", goal:()=>state.testProgress>=4, hint:"Step by step." },
+
+{ title:"Level 10.1 — Cron automation", text:"Add a simulated cron job to run script.sh every minute.", goal:()=>state.lastCmd==="crontab -l", hint:"crontab -e" },
+{ title:"Level 10.2 — Monitoring", text:"Check running processes and memory.", goal:()=>state.lastCmd==="ps aux" && state.lastCmd==="free -h", hint:"ps aux, free -h" },
+{ title:"Level 10.3 — Combining commands", text:"Use pipe and redirection together.", goal:()=>state.lastCmd.includes("|") && state.lastCmd.includes(">"), hint:"cat file.txt | grep 'pattern' > out.txt" },
+{ title:"🧪 Level 10 Final Test", text:"Simulate sysadmin tasks, monitoring, cron, pipes, redirection.", goal:()=>state.testProgress>=3, hint:"Follow carefully." }
+);
+
+// =====================
+// MOBILE ENHANCEMENTS
+// =====================
+function resizeTerminal(){
+    let h = window.innerHeight - instr.offsetHeight - input.parentElement.offsetHeight - 20;
+    term.style.height = h+"px";
 }
+window.addEventListener("resize", resizeTerminal);
+resizeTerminal();
+
+// Auto-focus input on load
+input.focus();
+
+// Auto-scroll terminal when new messages appear (already handled in print())
+print("📱 Mobile-ready: input focused, terminal auto-scroll, instructions adjust height.");
+
+// =====================
+// FINALIZE HTML
+// =====================
 </script>
 </body>
 </html>
