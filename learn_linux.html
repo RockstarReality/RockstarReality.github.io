@@ -43,7 +43,17 @@ let fs={"/":{home:{student:{"readme.txt":{content:"Welcome to Learn Linux.\nLinu
 let state={lastCmd:"", testProgress:0, packages:[], mistakes:{}, training:false, trainingQueue:[], trainingIndex:0, hintCount:0};
 
 // =====================
-// LESSONS 1-6
+// SHUFFLE FUNCTION (was missing)
+// =====================
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    let j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
+// =====================
+// LESSONS
 // =====================
 let lessonIndex=0;
 const lessons=[
@@ -66,7 +76,7 @@ const lessons=[
 { title:"Level 4.1 — Download a file", text:"Simulate downloading a file using wget.", goal:()=>resolveDir(cwd)["downloaded.txt"], hint:"wget http://example.com/file.txt" },
 { title:"Level 4.2 — Use curl", text:"Simulate downloading another file with curl.", goal:()=>resolveDir(cwd)["curlfile.txt"], hint:"curl -O http://example.com/other.txt" },
 { title:"Level 4.3 — Verify download", text:"Check file type of downloaded.txt.", goal:()=>state.lastCmd==="file downloaded.txt", hint:"file downloaded.txt" },
-{ title:"Level 4 Final Test", text:"Use wget, curl, check file type. Practice safe handling.", goal:()=>state.testProgress>=3, hint:"Step by step." },
+{ title:"Level 4 Final Test", text:"Use wget, curl, check file type.", goal:()=>state.testProgress>=3, hint:"Step by step." },
 
 { title:"Level 5.1 — Update package list", text:"Update the system package list using apt update.", goal:()=>state.lastCmd==="apt update", hint:"apt update" },
 { title:"Level 5.2 — Install a package", text:"Install a package (simulate).", goal:()=>state.packages.includes("nano"), hint:"apt install nano" },
@@ -79,8 +89,29 @@ const lessons=[
 { title:"Level 6.3 — Disk usage", text:"Show disk usage.", goal:()=>state.lastCmd==="df -h", hint:"df -h" },
 { title:"Level 6.4 — Schedule a cron job", text:"Simulate adding a cron job.", goal:()=>state.lastCmd==="crontab -l", hint:"crontab -l" },
 { title:"Level 6.5 — Network info", text:"Check IP addresses.", goal:()=>state.lastCmd==="ip addr", hint:"ip addr" },
-{ title:"Level 6 Final Test", text:"Processes, memory, disk, cron, network.", goal:()=>state.testProgress>=5, hint:"Step by step." }
+{ title:"Level 6 Final Test", text:"Processes, memory, disk, cron, network.", goal:()=>state.testProgress>=5, hint:"Step by step." },
+
+{ title:"Level 7.1 — Loops in scripts", text:"Add a for loop in script.sh that prints numbers 1-5.", goal:()=>resolveDir(cwd)["script.sh"].content.includes("for"), hint:"for i in 1 2 3 4 5; do echo $i; done" },
+{ title:"Level 7.2 — Variables", text:"Use a variable in script.sh to store a message and echo it.", goal:()=>resolveDir(cwd)["script.sh"].content.includes("msg="), hint:"msg='Hello'; echo $msg" },
+{ title:"🧪 Level 7 Final Test", text:"Write a script using a loop and variable. Run it.", goal:()=>state.testProgress>=2, hint:"Step by step." },
+
+{ title:"Level 8.1 — Redirection", text:"Redirect output of echo 'Hello' to hello.txt.", goal:()=>resolveDir(cwd)["hello.txt"], hint:"echo 'Hello' > hello.txt" },
+{ title:"Level 8.2 — Pipes", text:"Pipe output of echo 'one two three' to grep 'two'.", goal:()=>state.lastCmd==="echo 'one two three' | grep 'two'", hint:"Use | grep" },
+{ title:"Level 8.3 — Filters", text:"Use awk to print the first column of a text file.", goal:()=>state.lastCmd.startsWith("awk"), hint:"awk '{print $1}' file.txt" },
+{ title:"🧪 Level 8 Final Test", text:"Use redirection, pipes, and filters on sample text.", goal:()=>state.testProgress>=3, hint:"Try one at a time." },
+
+{ title:"Level 9.1 — File ownership", text:"Simulate changing ownership of notes.txt to another user.", goal:()=>state.lastCmd==="chown user:group notes.txt", hint:"chown user:group notes.txt" },
+{ title:"Level 9.2 — Permissions review", text:"Check permissions and explain meaning.", goal:()=>state.lastCmd==="stat notes.txt", hint:"stat notes.txt" },
+{ title:"Level 9.3 — Sudo simulation", text:"Run a command with elevated privileges.", goal:()=>state.lastCmd.startsWith("sudo"), hint:"sudo ls /root" },
+{ title:"Level 9.4 — Network commands", text:"Ping 127.0.0.1 and check network info.", goal:()=>state.lastCmd==="ping 127.0.0.1" || state.lastCmd==="ip addr", hint:"ping, ip addr" },
+{ title:"🧪 Level 9 Final Test", text:"Ownership, permissions, sudo, networking.", goal:()=>state.testProgress>=4, hint:"Step by step." },
+
+{ title:"Level 10.1 — Cron automation", text:"Add a simulated cron job to run script.sh every minute.", goal:()=>state.lastCmd==="crontab -l", hint:"crontab -e" },
+{ title:"Level 10.2 — Monitoring", text:"Check running processes and memory.", goal:()=>state.lastCmd==="ps aux" && state.lastCmd==="free -h", hint:"ps aux, free -h" },
+{ title:"Level 10.3 — Combining commands", text:"Use pipe and redirection together.", goal:()=>state.lastCmd.includes("|") && state.lastCmd.includes(">"), hint:"cat file.txt | grep 'pattern' > out.txt" },
+{ title:"🧪 Level 10 Final Test", text:"Simulate sysadmin tasks, monitoring, cron, pipes, redirection.", goal:()=>state.testProgress>=3, hint:"Follow carefully." }
 ];
+
 // =====================
 // UI ELEMENTS
 // =====================
@@ -121,110 +152,22 @@ function normalizePath(path){
 }
 
 // =====================
-// LOAD LESSONS
+// LOAD LESSON
 // =====================
 function loadLesson(){ 
     if(lessonIndex >= lessons.length){ 
         instr.textContent="🎉 Congratulations! You completed all lessons.";
         return;
     }
-    instr.textContent=`📘 ${lessons[lessonIndex].title}\n\n${lessons[lessonIndex].text}`;
-    state.hintCount=0; // reset hints per lesson
+    instr.textContent=`📘 \( {lessons[lessonIndex].title}\n\n \){lessons[lessonIndex].text}`;
+    state.hintCount=0;
     if(!state.training && (lessonIndex===0 || Object.values(state.mistakes).some(v=>v>=2))){
-        print("💡 Tip: Use `training` or `train` anytime to practice commands you struggle with.","hint");
+        print("💡 Tip: Use `training` or `train` anytime.","hint");
     }
 }
 
 // =====================
-// INPUT HANDLING
-// =====================
-input.addEventListener("keydown", e=>{
-    if(e.key==="Enter"){ 
-        execute(input.value.trim()); 
-        input.value=""; 
-        input.focus(); 
-        saveProgress(); 
-    }
-});
-document.body.addEventListener("click",()=>input.focus());
-
-// =====================
-// COMMAND EXECUTION
-// =====================
-function execute(cmdline){
-    state.lastCmd = cmdline;
-    if(cmdline) print(`$ ${cmdline}`, "dim");
-    let [cmd, ...args] = cmdline.split(" ");
-    let arg = args.join(" ");
-
-    // HELP
-    if(cmd==="help"||cmdline.endsWith("-h")) 
-        print("Commands:\npwd, ls, ls -l, cd, touch, cat, whoami, id, stat, chmod, file, which, wget, curl, apt update/install/upgrade, dpkg -l, ps aux, free -h, df -h, crontab -l, ip addr, nano, bash, hint, skip, training, train\n💡 `train` / `training` starts practice mode for your mistakes.");
-
-    // HINT
-    else if(cmd==="hint"){ 
-        print(lessons[lessonIndex].hint,"hint"); 
-        state.hintCount++; 
-    }
-
-    // NAVIGATION & FILES
-    else if(cmd==="pwd") print(cwd);
-    else if(cmd==="ls" && args[0]==="-l"){
-        let dir = resolveDir(cwd);
-        if(dir) Object.entries(dir).forEach(([n,f])=>print(`${f.perm} ${user} ${n}`));
-        else print("No such directory","error");
-    }
-    else if(cmd==="ls"){
-        let dir = resolveDir(cwd);
-        if(dir) print(Object.keys(dir).join(" "));
-        else print("No such directory","error");
-    }
-    else if(cmd==="cd"){ 
-        let target = normalizePath(arg||"/");
-        if(resolveDir(target)) cwd=target;
-        else print("No such directory","error");
-    }
-    else if(cmd==="touch"){ 
-        let dir = resolveDir(cwd);
-        if(dir) dir[arg]={content:"",perm:"rw-r--r--",type:"text"}; 
-        print("File created"); 
-    }
-    else if(cmd==="cat"){ 
-        let dir = resolveDir(cwd);
-        let f = dir ? dir[arg] : null;
-        if(f && f.content!==undefined) print(f.content);
-        else print("No such file","error"); 
-    }
-
-    // TRACK LESSON PROGRESS
-    if(lessons[lessonIndex]?.goal && lessons[lessonIndex].goal()){
-        state.testProgress++;
-        if(!lessons[lessonIndex].title.includes("Final") && !state.training){ 
-            lessonIndex++; 
-            state.testProgress=0; 
-            loadLesson(); 
-        } else if(lessons[lessonIndex].title.includes("Final") && state.testProgress>=lessons[lessonIndex].goal()){ 
-            lessonIndex++; 
-            state.testProgress=0; 
-            print("🎉 Lesson complete! Moving to next lesson.","success");
-            if(lessonIndex<lessons.length) loadLesson();
-        }
-    }
-
-    // TRAINING MODE
-    if(state.training){
-        let current = state.trainingQueue[state.trainingIndex];
-        if(current.goal()){ 
-            state.trainingIndex++; 
-            loadTrainingLesson(); 
-        }
-    }
-
-    saveProgress();
-}
-
-// =====================
-// TRAINING MODE FIXED
+// TRAINING
 // =====================
 function startTraining(){
     state.training=true;
@@ -247,51 +190,192 @@ function loadTrainingLesson(){
         return; 
     }
     let l=state.trainingQueue[state.trainingIndex];
-    instr.textContent=`🎯 Training: ${l.title}\n\n${l.text}`;
-              }
-  // =====================
-// LESSONS 7-10 (Advanced)
-// =====================
-lessons.push(
-{ title:"Level 7.1 — Loops in scripts", text:"Add a for loop in script.sh that prints numbers 1-5.", goal:()=>resolveDir(cwd)["script.sh"].content.includes("for"), hint:"for i in 1 2 3 4 5; do echo $i; done" },
-{ title:"Level 7.2 — Variables", text:"Use a variable in script.sh to store a message and echo it.", goal:()=>resolveDir(cwd)["script.sh"].content.includes("msg="), hint:"msg='Hello'; echo $msg" },
-{ title:"🧪 Level 7 Final Test", text:"Write a script using a loop and variable. Run it.", goal:()=>state.testProgress>=2, hint:"Step by step." },
-
-{ title:"Level 8.1 — Redirection", text:"Redirect output of echo 'Hello' to hello.txt.", goal:()=>resolveDir(cwd)["hello.txt"], hint:"echo 'Hello' > hello.txt" },
-{ title:"Level 8.2 — Pipes", text:"Pipe output of echo 'one two three' to grep 'two'.", goal:()=>state.lastCmd==="echo 'one two three' | grep 'two'", hint:"Use | grep" },
-{ title:"Level 8.3 — Filters", text:"Use awk to print the first column of a text file.", goal:()=>state.lastCmd.startsWith("awk"), hint:"awk '{print $1}' file.txt" },
-{ title:"🧪 Level 8 Final Test", text:"Use redirection, pipes, and filters on sample text.", goal:()=>state.testProgress>=3, hint:"Try one at a time." },
-
-{ title:"Level 9.1 — File ownership", text:"Simulate changing ownership of notes.txt to another user.", goal:()=>state.lastCmd==="chown user:group notes.txt", hint:"chown user:group notes.txt" },
-{ title:"Level 9.2 — Permissions review", text:"Check permissions and explain meaning.", goal:()=>state.lastCmd==="stat notes.txt", hint:"stat notes.txt" },
-{ title:"Level 9.3 — Sudo simulation", text:"Run a command with elevated privileges.", goal:()=>state.lastCmd.startsWith("sudo"), hint:"sudo ls /root" },
-{ title:"Level 9.4 — Network commands", text:"Ping 127.0.0.1 and check network info.", goal:()=>state.lastCmd==="ping 127.0.0.1" || state.lastCmd==="ip addr", hint:"ping, ip addr" },
-{ title:"🧪 Level 9 Final Test", text:"Ownership, permissions, sudo, networking.", goal:()=>state.testProgress>=4, hint:"Step by step." },
-
-{ title:"Level 10.1 — Cron automation", text:"Add a simulated cron job to run script.sh every minute.", goal:()=>state.lastCmd==="crontab -l", hint:"crontab -e" },
-{ title:"Level 10.2 — Monitoring", text:"Check running processes and memory.", goal:()=>state.lastCmd==="ps aux" && state.lastCmd==="free -h", hint:"ps aux, free -h" },
-{ title:"Level 10.3 — Combining commands", text:"Use pipe and redirection together.", goal:()=>state.lastCmd.includes("|") && state.lastCmd.includes(">"), hint:"cat file.txt | grep 'pattern' > out.txt" },
-{ title:"🧪 Level 10 Final Test", text:"Simulate sysadmin tasks, monitoring, cron, pipes, redirection.", goal:()=>state.testProgress>=3, hint:"Follow carefully." }
-);
-
-// =====================
-// MOBILE & UX ENHANCEMENTS
-// =====================
-function resizeTerminal(){
-    let h = window.innerHeight - instr.offsetHeight - input.parentElement.offsetHeight - 20;
-    term.style.height = h+"px";
+    instr.textContent=`🎯 Training: \( {l.title}\n\n \){l.text}`;
 }
-window.addEventListener("resize", resizeTerminal);
-resizeTerminal();
-input.focus(); // auto-focus input on load
 
-// Auto-scroll terminal handled in print()
-print("📱 Mobile-ready: input focused, terminal auto-scroll, instructions adjust height.");
-// Load the first lesson automatically
+// =====================
+// INPUT HANDLING
+// =====================
+input.addEventListener("keydown", e=>{
+    if(e.key==="Enter"){ 
+        execute(input.value.trim()); 
+        input.value=""; 
+        input.focus(); 
+    }
+});
+document.body.addEventListener("click",()=>input.focus());
+
+// =====================
+// COMMAND EXECUTION
+// =====================
+function execute(cmdline){
+    if(!cmdline) return;
+    state.lastCmd = cmdline;
+    print(`$ ${cmdline}`, "dim");
+
+    let parts = cmdline.split(" ");
+    let cmd = parts[0];
+    let arg = parts.slice(1).join(" ");
+
+    // Final lesson auto-progress (prevents stalling)
+    if(lessons[lessonIndex]?.title.includes("Final")){
+        if(cmd && !["help","hint","skip","training","train","levels","menu","goto","go","jump"].includes(cmd)){
+            state.testProgress++;
+        }
+    }
+
+    // HELP
+    if(cmd==="help"||cmdline.endsWith("-h")) {
+        print("Commands: pwd ls ls -l cd touch cat whoami id chmod file which wget curl apt update/install/upgrade dpkg -l ps aux free -h df -h crontab -l ip addr echo > nano bash script.sh\nSpecial: hint, skip [N], levels/menu, goto N / go N / jump N, training/train","hint");
+    }
+
+    // HINT
+    else if(cmd==="hint"){ 
+        print(lessons[lessonIndex].hint,"hint"); 
+        state.hintCount++; 
+    }
+
+    // SKIP
+    else if(cmd==="skip"){
+        let steps = (arg && !isNaN(parseInt(arg))) ? parseInt(arg) : 1;
+        let skipped = 0;
+        for(let i = 0; i < steps && lessonIndex < lessons.length - 1; i++){
+            lessonIndex++;
+            skipped++;
+        }
+        state.testProgress = 0;
+        state.hintCount = 0;
+        if(skipped > 0){
+            print(`⏭ Skipped \( {skipped} lesson(s). Now at: \){lessons[lessonIndex].title}`,"hint");
+            if(lessonIndex < lessons.length) loadLesson();
+            else instr.textContent = "🎉 You've skipped to the end!";
+        } else {
+            print("Nothing left to skip.","dim");
+        }
+    }
+
+    // MENU / LEVELS
+    else if(cmd==="levels" || cmd==="menu"){
+        let output = "📋 Available Lessons:\n";
+        lessons.forEach((l,i) => {
+            let marker = (i === lessonIndex) ? " ← CURRENT" : "";
+            output += `\( {i+1}. \){l.title}${marker}\n`;
+        });
+        print(output.trim(),"hint");
+    }
+
+    // GOTO / JUMP
+    else if(cmd==="goto" || cmd==="go" || cmd==="jump"){
+        let target = parseInt(arg);
+        if(!isNaN(target) && target >=1 && target <= lessons.length){
+            lessonIndex = target - 1;
+            state.testProgress = 0;
+            state.hintCount = 0;
+            print(`✅ Jumped to lesson \( {target}: \){lessons[lessonIndex].title}`,"success");
+            loadLesson();
+        } else {
+            print(`Invalid number. Use 'levels' to see list (1-${lessons.length})`,"error");
+        }
+    }
+
+    // TRAINING
+    else if(cmd==="training" || cmd==="train"){
+        startTraining();
+    }
+
+    // BASIC COMMANDS
+    else if(cmd==="pwd") print(cwd);
+    else if(cmd==="ls" && arg==="-l"){
+        let dir = resolveDir(cwd);
+        if(dir) Object.entries(dir).forEach(([n,f])=>print(`\( {f.perm} \){user} ${n}`));
+        else print("No such directory","error");
+    }
+    else if(cmd==="ls"){
+        let dir = resolveDir(cwd);
+        if(dir) print(Object.keys(dir).join(" "));
+        else print("No such directory","error");
+    }
+    else if(cmd==="cd"){ 
+        let target = normalizePath(arg||"/");
+        if(resolveDir(target)) cwd=target;
+        else print("No such directory","error");
+    }
+    else if(cmd==="touch"){ 
+        let dir = resolveDir(cwd);
+        if(dir && arg) dir[arg]={content:"",perm:"rw-r--r--",type:"text"}; 
+        print("File created"); 
+    }
+    else if(cmd==="cat"){ 
+        let dir = resolveDir(cwd);
+        let f = dir ? dir[arg] : null;
+        if(f && f.content!==undefined) print(f.content);
+        else print("No such file","error"); 
+    }
+    else if(cmd==="echo"){
+        if(arg.includes(">")){
+            let parts = arg.split(">",2);
+            let content = parts[0].trim().replace(/^["']|["']$/g,"");
+            let filename = parts[1].trim();
+            let dir = resolveDir(cwd);
+            if(dir && filename){
+                dir[filename] = {content, perm:"rw-r--r--", type:"text"};
+                print(`Written to ${filename}`);
+            }
+        } else {
+            print(arg || "");
+        }
+    }
+    else if(cmd==="bash" || cmd.endsWith(".sh")){
+        let scriptName = cmd.endsWith(".sh") ? cmd : arg;
+        let dir = resolveDir(cwd);
+        let f = dir ? dir[scriptName] : null;
+        if(f && f.content){
+            print(`Running ${scriptName} (simulated)...`);
+            if(f.content.includes("echo")){
+                let matches = f.content.match(/echo\s+["']?([^"'\n]+)/g);
+                if(matches) matches.forEach(m => print(m.replace(/echo\s+["']?/, "")));
+            } else {
+                print("Script completed successfully.");
+            }
+        } else print("No such script","error");
+    }
+    else if(cmd==="nano"){
+        print("nano: Full editing not supported. Use 'echo \"content\" > filename' instead.","hint");
+    }
+
+    // Progress check for regular lessons
+    if(lessons[lessonIndex]?.goal && lessons[lessonIndex].goal()){
+        state.testProgress++;
+        if(!lessons[lessonIndex].title.includes("Final")){
+            lessonIndex++;
+            state.testProgress=0;
+            loadLesson();
+        } else if(state.testProgress >= 3){  // conservative threshold
+            print("🎉 Final test complete! Moving on.","success");
+            lessonIndex++;
+            state.testProgress=0;
+            if(lessonIndex < lessons.length) loadLesson();
+        }
+    }
+
+    // Training mode check
+    if(state.training){
+        let current = state.trainingQueue[state.trainingIndex];
+        if(current && current.goal()){
+            state.trainingIndex++;
+            loadTrainingLesson();
+        }
+    }
+}
+
+// =====================
+// START
+// =====================
+print("📱 Welcome to Learn Linux Terminal Trainer");
+print("Type 'help' for commands. Type 'levels' to see all lessons.","hint");
 if(!state.training) loadLesson();
-// =====================
-// FINALIZE HTML
-// =====================
+
+input.focus();
 </script>
 </body>
 </html>
