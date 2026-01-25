@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Learn Linux</title>
+
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            margin: 0; padding: 0;
+            font-family: monospace;
+            background: #1e1e1e;
+            color: #eee;
+        }
+        #instructions {
+            background: #2e2e2e;
+            padding: 15px;
+            height: 25vh;
+            overflow-y: auto;
+            border-bottom: 2px solid #444;
+        }
+        #terminal {
+            background: black;
+            flex-grow: 1;
+            padding: 10px;
+            color: white;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        .prompt { color: #0f0; }
+        .cmd { color: #0ff; }
+        .output { color: #ddd; }
+        .hint { color: #ff0; }
+        .success { color: #0f0; font-weight: bold; }
+        .error { color: #f00; }
+    </style>
+</head>
+
+<body>
+
+<div id="instructions">Loading instructions...</div>
+<pre id="terminal"></pre>
+
+<script>
+const instructionsPanel = document.getElementById("instructions");
+const terminal = document.getElementById("terminal");
+
+// A simple virtual filesystem (initial)
+let fs = {
+    "/": { "home": { "readme.txt": "Welcome to Learn Linux!" } },
+};
+let cwd = "/home";
+
+// A history buffer for terminal
+let buffer = "";
+
+// Current lesson index
+let lessonIndex = 0;
+
+// Minimal lessons data
+const lessons = [
+    {
+        title: "Level 1 — Hello Linux",
+        text: "Welcome to Level 1!\nType 'pwd' to show your current directory.",
+        goal: { cmd: "pwd" },
+        hint: "Try 'pwd'… it's short for Print Working Directory."
+    },
+    {
+        title: "Level 1 — Listing Files",
+        text: "Great! Now list the files here.",
+        goal: { cmd: "ls" },
+        hint: "Try 'ls' to list files."
+    }
+];
+
+function loadLesson() {
+    const lesson = lessons[lessonIndex];
+    instructionsPanel.textContent = `📘 ${lesson.title}\n\n${lesson.text}`;
+}
+
+// Render initial
+loadLesson();
+renderPrompt();
+
+// Terminal interaction
+document.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+        handleCommand(buffer.trim());
+        buffer = "";
+    } else if (e.key === "Backspace") {
+        buffer = buffer.slice(0, -1);
+        renderPrompt();
+    } else if (e.key.length === 1) {
+        buffer += e.key;
+        renderPrompt();
+    }
+});
+
+function renderPrompt() {
+    terminal.textContent = `\n$ ${buffer}`;
+    terminal.scrollTop = terminal.scrollHeight;
+}
+
+function printOutput(text, cls = "output") {
+    terminal.textContent += `\n<span class="${cls}">${text}</span>`;
+}
+
+function handleCommand(cmd) {
+    printOutput(`$ ${cmd}`, "cmd");
+  
+    if (cmd === "help" || cmd === "-h" || cmd.endsWith(" -h")) {
+        printOutput("Available commands: pwd, ls, help, hint", "output");
+    } else if (cmd === "hint") {
+        printOutput(lessons[lessonIndex].hint, "hint");
+    }
+    else if (cmd === "pwd") {
+        printOutput(cwd);
+        checkGoal(cmd);
+    }
+    else if (cmd === "ls") {
+        const parts = cwd.split("/").filter(x=>x);
+        let node = fs["/"];
+        for (let p of parts) node = node[p] || {};
+        printOutput(Object.keys(node).join(" "));
+        checkGoal(cmd);
+    }
+    else {
+        printOutput(`Command not found: ${cmd}`, "error");
+    }
+    renderPrompt();
+}
+
+function checkGoal(cmd) {
+    const goal = lessons[lessonIndex].goal;
+    if (goal.cmd === cmd) {
+        printOutput("✅ Correct! Type 'continue' to move on", "success");
+    }
+    if (cmd === "continue") {
+        lessonIndex++;
+        if (lessonIndex < lessons.length) {
+            loadLesson();
+        } else {
+            printOutput("🏁 You've finished all current lessons!", "success");
+        }
+    }
+}
+</script>
+
+</body>
+</html>
