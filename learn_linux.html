@@ -2,45 +2,111 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Learn Linux</title>
 
 <style>
+/* ========== MOBILE FIRST BASE ========== */
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
-  display: flex;
-  flex-direction: column;
   background: #1e1e1e;
   color: #eaeaea;
   font-family: monospace;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
 }
 
+/* ========== INSTRUCTIONS ========== */
 #instructions {
-  padding: 16px;
+  padding: 1rem;
   background: #2b2b2b;
-  height: 30vh;
+  min-height: 30vh;
+  max-height: 40vh;
   overflow-y: auto;
   border-bottom: 2px solid #444;
   white-space: pre-line;
+  font-size: 0.95rem;
 }
 
+/* ========== TERMINAL OUTPUT ========== */
 #terminal {
   flex: 1;
+  padding: 0.75rem;
   background: #000;
-  padding: 12px;
   overflow-y: auto;
+  font-size: 0.9rem;
+  line-height: 1.4;
 }
 
+/* ========== INPUT BAR ========== */
+#input-bar {
+  display: flex;
+  padding: 0.5rem;
+  background: #111;
+  border-top: 2px solid #333;
+}
+
+#prompt {
+  color: #00ff88;
+  padding-right: 0.25rem;
+  font-size: 1rem;
+}
+
+#commandInput {
+  flex: 1;
+  background: #000;
+  color: #fff;
+  border: none;
+  outline: none;
+  font-family: monospace;
+  font-size: 1rem;
+}
+
+/* ========== TEXT STYLES ========== */
 .success { color: #00ff88; }
 .hint { color: #ffd866; }
 .error { color: #ff5555; }
 .dim { color: #888; }
+
+/* ========== DESKTOP ENHANCEMENTS ========== */
+@media (min-width: 768px) {
+  body {
+    flex-direction: row;
+  }
+  #instructions {
+    width: 40%;
+    height: 100vh;
+    max-height: none;
+    border-bottom: none;
+    border-right: 2px solid #444;
+  }
+  #terminal-container {
+    width: 60%;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+}
 </style>
 </head>
 
 <body>
 
 <div id="instructions"></div>
-<pre id="terminal"></pre>
+
+<div id="terminal-container">
+  <pre id="terminal"></pre>
+
+  <div id="input-bar">
+    <span id="prompt">$</span>
+    <input id="commandInput" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="type a command…" />
+  </div>
+</div>
 
 <script>
 // =================================================
@@ -48,13 +114,12 @@ body {
 // =================================================
 let cwd = "/home/student";
 let user = "student";
-let buffer = "";
 
 let fs = {
   "/": {
     home: {
       student: {
-        "readme.txt": "Welcome to Learn Linux.\nLinux rewards curiosity.",
+        "readme.txt": "Welcome to Learn Linux.\nLinux rewards curiosity."
       }
     }
   }
@@ -66,7 +131,7 @@ let state = {
 };
 
 // =================================================
-// LESSONS — LEVEL 1 COMPLETE
+// LESSONS — LEVEL 1
 // =================================================
 let lessonIndex = 0;
 
@@ -75,13 +140,13 @@ const lessons = [
   title: "Level 1.1 — Where am I?",
   text: "You are inside a Linux machine.\n\nShow your current directory.",
   goal: () => state.lastCmd === "pwd",
-  hint: "Use the command: pwd"
+  hint: "Use: pwd"
 },
 {
   title: "Level 1.1 — What is here?",
   text: "List the files in this directory.",
   goal: () => state.lastCmd === "ls",
-  hint: "Try: ls"
+  hint: "Use: ls"
 },
 {
   title: "Level 1.2 — Move around",
@@ -122,19 +187,16 @@ const lessons = [
 {
   title: "🧪 Level 1 Final Test",
   text:
-`This is a real mini challenge.
-
-Tasks:
-1. Go to the root directory
-2. Return to your home directory
-3. List the files
+`Tasks:
+1. Go to /
+2. Go back home
+3. List files
 4. Read readme.txt
-5. Show which user you are
+5. Show your user
 
-No hints unless you ask for them.
-Take your time.`,
+No hints unless you ask.`,
   goal: () => state.testProgress >= 5,
-  hint: "Break it down. One task at a time."
+  hint: "Slow down. One task at a time."
 }
 ];
 
@@ -143,6 +205,7 @@ Take your time.`,
 // =================================================
 const instr = document.getElementById("instructions");
 const term = document.getElementById("terminal");
+const input = document.getElementById("commandInput");
 
 function loadLesson() {
   const l = lessons[lessonIndex];
@@ -150,50 +213,44 @@ function loadLesson() {
 }
 
 function print(text, cls="") {
-  term.textContent += "\n" + text;
+  const span = document.createElement("div");
+  span.textContent = text;
+  if (cls) span.className = cls;
+  term.appendChild(span);
   term.scrollTop = term.scrollHeight;
 }
-
-function prompt() {
-  term.textContent += `\n$ ${buffer}`;
-  term.scrollTop = term.scrollHeight;
-}
-
-loadLesson();
-prompt();
 
 // =================================================
 // INPUT HANDLING
 // =================================================
-document.addEventListener("keydown", e => {
+input.addEventListener("keydown", e => {
   if (e.key === "Enter") {
-    execute(buffer.trim());
-    buffer = "";
-  } else if (e.key === "Backspace") {
-    buffer = buffer.slice(0, -1);
-  } else if (e.key.length === 1) {
-    buffer += e.key;
+    execute(input.value.trim());
+    input.value = "";
   }
-  redraw();
 });
 
-function redraw() {
-  term.textContent = term.textContent.split("\n$")[0];
-  prompt();
-}
+// Auto focus on tap
+document.body.addEventListener("click", () => input.focus());
+
+loadLesson();
+print("Welcome to Learn Linux.");
+print("Type 'help' if you're unsure.");
 
 // =================================================
 // COMMAND EXECUTION
 // =================================================
-function execute(input) {
-  state.lastCmd = input;
-  print(`$ ${input}`);
+function execute(inputCmd) {
+  if (!inputCmd) return;
 
-  const parts = input.split(" ");
+  state.lastCmd = inputCmd;
+  print(`$ ${inputCmd}`, "dim");
+
+  const parts = inputCmd.split(" ");
   const cmd = parts[0];
   const arg = parts.slice(1).join(" ");
 
-  if (cmd === "help" || input.endsWith("-h")) {
+  if (cmd === "help" || inputCmd.endsWith("-h")) {
     print("Commands: pwd, ls, cd, touch, cat, whoami, id, hint");
   }
   else if (cmd === "hint") {
@@ -230,11 +287,11 @@ function execute(input) {
 
   // Final test tracking
   if (lessons[lessonIndex].title.includes("Final Test")) {
-    if (input === "cd /") state.testProgress++;
-    if (input === "cd /home/student") state.testProgress++;
-    if (input === "ls") state.testProgress++;
-    if (input === "cat readme.txt") state.testProgress++;
-    if (input === "whoami") state.testProgress++;
+    if (inputCmd === "cd /") state.testProgress++;
+    if (inputCmd === "cd /home/student") state.testProgress++;
+    if (inputCmd === "ls") state.testProgress++;
+    if (inputCmd === "cat readme.txt") state.testProgress++;
+    if (inputCmd === "whoami") state.testProgress++;
   }
 
   checkLesson();
@@ -262,17 +319,16 @@ function checkLesson() {
       instr.textContent =
 `🎉 LEVEL 1 COMPLETE
 
-You can now:
+You can:
 ✔ Navigate directories
-✔ Create and read files
-✔ Understand where you are
-✔ Know who you are in the system
+✔ Create & read files
+✔ Understand your user
 
 You didn’t memorize Linux.
-You *used* Linux.
+You used it.
 
-Next up:
-LEVEL 2 — Files, permissions, and control 🛠️`;
+Next:
+LEVEL 2 — Files, permissions & control 🛠️`;
     }
   }
 }
