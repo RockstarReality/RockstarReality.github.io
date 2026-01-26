@@ -3,372 +3,625 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Learn Linux</title>
+<title>Learn Linux Terminal Game</title>
+
+<!--
+=====================================================
+ LEARN LINUX TERMINAL GAME — FUNCTION INDEX
+=====================================================
+
+UI / TERMINAL
+- print()
+- resizeTerminal()
+
+FILESYSTEM
+- normalizePath()
+- resolveDir()
+- ensurePath()
+
+LESSONS & MODES
+- loadLesson()
+- loadTrainingLesson()
+- startEndlessMode()
+
+GAME MODES
+- normal mode
+- training / train
+- endless
+
+PLAYER HELP
+- help / man
+- hint
+- answer
+- skip [n | level]
+
+EXECUTION
+- execute()
+- input handler
+
+=====================================================
+-->
+
 <style>
-*{box-sizing:border-box;}
-body{margin:0;font-family:monospace;display:flex;flex-direction:column;height:100vh;background:#1e1e1e;color:#eaeaea;}
-#instructions{padding:0.8rem;background:#2b2b2b;min-height:14vh;max-height:20vh;overflow-y:auto;border-bottom:2px solid #444;white-space: pre-line;}
-#terminal{flex:1;padding:0.75rem;background:#000;overflow-y:auto;font-size:0.9rem;line-height:1.4;}
-#input-bar{display:flex;padding:0.5rem;background:#111;border-top:2px solid #333;}
-#prompt{color:#00ff88;margin-right:0.3rem;}
-#commandInput{flex:1;background:#000;color:#fff;border:none;outline:none;font-family:monospace;font-size:1rem;}
-.success{color:#00ff88;}
-.hint{color:#ffd866;}
-.error{color:#ff5555;}
-.dim{color:#888;}
-@media(min-width:768px){
-  body{flex-direction:row;}
-  #instructions{width:40%;height:100vh;max-height:none;border-bottom:none;border-right:2px solid #444;}
-  #terminal-container{width:60%;display:flex;flex-direction:column;height:100vh;}
-}
+  body { font-family: monospace; background:#1e1e1e; color:#e0e0e0; margin:0; }
+  #terminal { background:#121212; padding:10px; height:60vh; overflow-y:auto; white-space:pre-wrap; }
+  #instructions { padding:10px; background:#222; min-height:50px; }
+  #inputWrapper { display:flex; }
+  #inputPrompt { padding:10px; color:#0f0; }
+  #commandInput { flex:1; padding:10px; background:#1e1e1e; color:#e0e0e0; border:none; outline:none; }
+  .success { color:#0f0; }
+  .error { color:#f00; }
+  .quote { color:#888; font-style:italic; }
 </style>
 </head>
+
 <body>
 
 <div id="instructions"></div>
-<div id="terminal-container">
-  <pre id="terminal"></pre>
-  <div id="input-bar">
-    <span id="prompt">$</span>
-    <input id="commandInput" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="type a command…">
-  </div>
+<div id="terminal"></div>
+<div id="inputWrapper">
+  <span id="inputPrompt">$</span>
+  <input id="commandInput" autofocus />
 </div>
 
 <script>
-// Global error catcher – prints errors directly to terminal for easy copy-paste debugging on phone
-window.addEventListener('error', function(e) {
-  print("JS ERROR: " + e.message + " (around line " + e.lineno + ")", "error");
-});
+/* =======================
+   BASE STATE
+======================= */
+let lessonIndex = 0;
+let trainingMode = false;
+let endlessMode = false;
 
-// =====================
-// STATE & FILESYSTEM
-// =====================
-let cwd="/home/student", user="student";
-let fs={"/":{home:{student:{"readme.txt":{content:"Welcome to Learn Linux.\nLinux rewards curiosity.",perm:"rw-r--r--",type:"text"},"script.sh":{content:"# /bin/bash\necho Hello",perm:"rw-------",type:"shell script"}}}}};
-let state={lastCmd:"", testProgress:0, packages:[], mistakes:{}, training:false, trainingQueue:[], trainingIndex:0, hintCount:0,
-           xp: 0, hearts: 5, streak: 0};  // Added gamification fields
-let lessonIndex=0;
-let debugMode = false;  // For extra debug output
+/* =======================
+   HISTORY & STATS
+======================= */
+let commandHistory = [];
+let lessonStats = {}; // { level: { missed, hintsUsed, answersUsed } }
 
-// Load saved progress from localStorage
-if (localStorage.getItem('learnLinuxProgress')) {
-  const saved = JSON.parse(localStorage.getItem('learnLinuxProgress'));
-  lessonIndex = saved.lessonIndex || 0;
-  state.xp = saved.xp || 0;
-  state.hearts = saved.hearts || 5;
-  state.streak = saved.streak || 0;
-}
-
-// Save progress to localStorage
-function saveProgress() {
-  const data = {
-    lessonIndex: lessonIndex,
-    xp: state.xp,
-    hearts: state.hearts,
-    streak: state.streak
-  };
-  localStorage.setItem('learnLinuxProgress', JSON.stringify(data));
-}
-
-// Shuffle for training mode (was missing)
-function shuffle(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    let j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-}
-
-// =====================
-// LESSONS 1-6 (your original)
-// =====================
-const lessons=[
-{ title:"Level 1.1 — Where am I?", text:"Show your current directory.", goal:()=>state.lastCmd==="pwd", hint:"pwd" },
-{ title:"Level 1.2 — List files", text:"List the files in this directory.", goal:()=>state.lastCmd==="ls", hint:"ls" },
-{ title:"Level 1.3 — Move around", text:"Change into root /.", goal:()=>cwd==="/", hint:"cd /" },
-{ title:"Level 1.4 — Go back home", text:"Return to home.", goal:()=>cwd==="/home/student", hint:"cd /home/student" },
-{ title:"Level 1.5 — Create a file", text:"Create notes.txt.", goal:()=>resolveDir(cwd)["notes.txt"], hint:"touch notes.txt" },
-{ title:"Level 1.6 — Read a file", text:"Read readme.txt.", goal:()=>state.lastCmd==="cat readme.txt", hint:"cat readme.txt" },
-{ title:"Level 2.1 — Who are you?", text:"Show your user.", goal:()=>state.lastCmd==="whoami", hint:"whoami" },
-{ title:"Level 2.2 — Identity details", text:"Show UID/GID.", goal:()=>state.lastCmd==="id", hint:"id" },
-{ title:"Level 2 Final Test", text:"Navigate, list, create/read files, show user.", goal:()=>state.testProgress>=5, hint:"Take one command at a time." },
-
-{ title:"Level 3.1 — Long listing", text:"List files with details.", goal:()=>state.lastCmd==="ls -l", hint:"ls -l" },
-{ title:"Level 3.2 — File type", text:"What is script.sh?", goal:()=>state.lastCmd==="file script.sh", hint:"file script.sh" },
-{ title:"Level 3.3 — Make executable", text:"Make script.sh executable for you.", goal:()=>resolveDir(cwd)["script.sh"].perm.startsWith("rwx"), hint:"chmod u+x script.sh" },
-{ title:"Level 3.4 — Locate command", text:"Where is ls?", goal:()=>state.lastCmd==="which ls", hint:"which ls" },
-{ title:"Level 3 Final Test", text:"List permissions, file type, chmod, which command.", goal:()=>state.testProgress>=4, hint:"Step by step." },
-
-{ title:"Level 4.1 — Download a file", text:"Simulate downloading a file using wget.", goal:()=>resolveDir(cwd)["downloaded.txt"], hint:"wget http://example.com/file.txt" },
-{ title:"Level 4.2 — Use curl", text:"Simulate downloading another file with curl.", goal:()=>resolveDir(cwd)["curlfile.txt"], hint:"curl -O http://example.com/other.txt" },
-{ title:"Level 4.3 — Verify download", text:"Check file type of downloaded.txt.", goal:()=>state.lastCmd==="file downloaded.txt", hint:"file downloaded.txt" },
-{ title:"Level 4 Final Test", text:"Use wget, curl, check file type. Practice safe handling.", goal:()=>state.testProgress>=3, hint:"Step by step." },
-
-{ title:"Level 5.1 — Update package list", text:"Update the system package list using apt update.", goal:()=>state.lastCmd==="apt update", hint:"apt update" },
-{ title:"Level 5.2 — Install a package", text:"Install a package (simulate).", goal:()=>state.packages.includes("nano"), hint:"apt install nano" },
-{ title:"Level 5.3 — List installed packages", text:"See installed packages with dpkg -l.", goal:()=>state.lastCmd==="dpkg -l", hint:"dpkg -l" },
-{ title:"Level 5.4 — Upgrade packages", text:"Upgrade installed packages.", goal:()=>state.lastCmd==="apt upgrade", hint:"apt upgrade" },
-{ title:"Level 5 Final Test", text:"Update, install, list packages, upgrade safely.", goal:()=>state.testProgress>=4, hint:"Step by step." },
-
-{ title:"Level 6.1 — List processes", text:"Show running processes.", goal:()=>state.lastCmd==="ps aux", hint:"ps aux" },
-{ title:"Level 6.2 — Check memory", text:"Show memory usage.", goal:()=>state.lastCmd==="free -h", hint:"free -h" },
-{ title:"Level 6.3 — Disk usage", text:"Show disk usage.", goal:()=>state.lastCmd==="df -h", hint:"df -h" },
-{ title:"Level 6.4 — Schedule a cron job", text:"Simulate adding a cron job.", goal:()=>state.lastCmd==="crontab -l", hint:"crontab -l" },
-{ title:"Level 6.5 — Network info", text:"Check IP addresses.", goal:()=>state.lastCmd==="ip addr", hint:"ip addr" },
-{ title:"Level 6 Final Test", text:"Processes, memory, disk, cron, network.", goal:()=>state.testProgress>=5, hint:"Step by step." }
+/* =======================
+   QUOTES (SECTION COMPLETE)
+======================= */
+const sectionQuotes = [
+  "💡 Linux Wisdom: In Unix, everything is a file.",
+  "🚀 You’re building real muscle memory now.",
+  "🧠 The shell is starting to feel like home.",
+  "🔥 This is how sysadmins are forged.",
+  "🧩 You’re no longer guessing — you’re reasoning."
+  
 ];
-// =====================
-// UI ELEMENTS
-// =====================
-const instr = document.getElementById("instructions");
-const term = document.getElementById("terminal");
-const input = document.getElementById("commandInput");
 
-function print(txt, cls="") {
-    let d = document.createElement("div");
-    d.textContent = txt;
-    if(cls) d.className = cls;
-    term.appendChild(d);
-    term.scrollTop = term.scrollHeight;
-}
+/* =======================
+   HELP SYSTEM
+======================= */
+const commandHelp = {
+  pwd:'print current directory',
+  ls:'list directory contents',
+  cd:'change directory',
+  mkdir:'create directory',
+  rmdir:'remove empty directory',
+  touch:'create file',
+  cat:'print file contents',
+  echo:'print message',
+  rm:'remove file',
+  cp:'copy file',
+  mv:'move or rename file',
+  clear:'clear terminal',
+  history:'show command history',
+  help:'list commands',
+  man:'list commands',
+  skip:'skip lesson',
+  hint:'show hint',
+  answer:'show exact answer',
+  train:'training mode',
+  endless:'endless mode',
+  status:'show progress',
+  menu:'show menu'
+};
 
-// =====================
-// FILESYSTEM HELPERS
-// =====================
-function resolveDir(path){
-    let p = path.split("/").filter(Boolean);
-    let c = fs["/"];
-    for(let x of p){
-        if(c[x] && typeof c[x]==="object") c = c[x];
-        else return null;
-    }
-    return c;
-}
+/* =======================
+   LESSONS (FULL 100-COMMAND TEMPLATE)
+======================= */
+
+/* 
+📌 PASTE THE FULL 100-COMMAND LESSONS HERE
+
+Replace the current "lessons" array with the fully expanded version for lessons 1–10.
+Example structure for each lesson:
+{ level:'6.3', section:6, instructions:'List all files including hidden', goal:'ls -a', hint:'ls -a' },
+
+- Keep the array syntax.
+- Make sure to include lessons 6–10 fully expanded (80 new commands).
+- You can keep levels 1–5 as they are.
+*/
+
+const lessons = [
+ 
+  // SECTION 1 — Basic Navigation
+{ level:'1.1', section:1, instructions:'Show current directory', goal:'pwd', hint:'Use pwd to display current directory' },
+{ level:'1.2', section:1, instructions:'List files in current directory', goal:'ls', hint:'Use ls to list files' },
+{ level:'1.3', section:1, instructions:'List files with details', goal:'ls -l', hint:'Use ls -l for detailed list' },
+{ level:'1.4', section:1, instructions:'Print a message', goal:'echo Hello', hint:'Use echo followed by text' },
+{ level:'1.5', section:1, instructions:'Create a new empty file hello.txt', goal:'touch hello.txt', hint:'Use touch filename' },
+{ level:'1.6', section:1, instructions:'Show contents of hello.txt', goal:'cat hello.txt', hint:'Use cat filename' },
+{ level:'1.7', section:1, instructions:'Create directory docs', goal:'mkdir docs', hint:'Use mkdir directoryname' },
+{ level:'1.8', section:1, instructions:'Move into docs', goal:'cd docs', hint:'Use cd directoryname' },
+{ level:'1.9', section:1, instructions:'Go back to parent directory', goal:'cd ..', hint:'Use cd .. to go up one level' },
+{ level:'1.10', section:1, instructions:'Clear the terminal screen', goal:'clear', hint:'Use clear to refresh terminal' },
+
+
+// SECTION 2 — File & Directory Management
+{ level:'2.1', section:2, instructions:'Create directory projects', goal:'mkdir projects', hint:'Use mkdir directoryname' },
+{ level:'2.2', section:2, instructions:'Enter projects directory', goal:'cd projects', hint:'Use cd directoryname' },
+{ level:'2.3', section:2, instructions:'Create nested directories code/src', goal:'mkdir -p code/src', hint:'Use mkdir -p path/to/dir' },
+{ level:'2.4', section:2, instructions:'Enter code/src directory', goal:'cd code/src', hint:'Use cd path/to/dir' },
+{ level:'2.5', section:2, instructions:'Go back two directories to root', goal:'cd ../..', hint:'Use cd .. to move up' },
+{ level:'2.6', section:2, instructions:'Copy hello.txt into projects', goal:'cp hello.txt projects/', hint:'Use cp source dest' },
+{ level:'2.7', section:2, instructions:'Move hello.txt to docs directory', goal:'mv hello.txt docs/', hint:'Use mv source dest' },
+{ level:'2.8', section:2, instructions:'Remove a test file temp.txt', goal:'rm temp.txt', hint:'Use rm filename' },
+{ level:'2.9', section:2, instructions:'Remove empty directory temp', goal:'rmdir temp', hint:'Use rmdir directoryname' },
+{ level:'2.10', section:2, instructions:'List files including hidden ones', goal:'ls -a', hint:'Use ls -a to see hidden files' },
+
+
+// SECTION 3 — Viewing & Printing Files
+{ level:'3.1', section:3, instructions:'Show current directory path', goal:'pwd', hint:'Use pwd to see your location' },
+{ level:'3.2', section:3, instructions:'List files with details', goal:'ls -l', hint:'Use ls -l for detailed listing' },
+{ level:'3.3', section:3, instructions:'Print contents of main.py', goal:'cat main.py', hint:'Use cat filename' },
+{ level:'3.4', section:3, instructions:'Print a message Hello World', goal:'echo Hello World', hint:'Use echo text' },
+{ level:'3.5', section:3, instructions:'Show last 5 lines of main.py', goal:'tail -n 5 main.py', hint:'Use tail -n number filename' },
+{ level:'3.6', section:3, instructions:'Show first 5 lines of main.py', goal:'head -n 5 main.py', hint:'Use head -n number filename' },
+{ level:'3.7', section:3, instructions:'Display main.py with line numbers', goal:'cat -n main.py', hint:'Use cat -n filename' },
+{ level:'3.8', section:3, instructions:'Count number of lines in main.py', goal:'wc -l main.py', hint:'Use wc -l filename' },
+{ level:'3.9', section:3, instructions:'Show last 10 commands', goal:'history 10', hint:'Use history number' },
+{ level:'3.10', section:3, instructions:'Clear terminal screen', goal:'clear', hint:'Use clear to empty terminal' },
+
+
+// SECTION 4 — Directories & Navigation
+{ level:'4.1', section:4, instructions:'Create directory projects', goal:'mkdir projects', hint:'Use mkdir dirname' },
+{ level:'4.2', section:4, instructions:'Enter projects directory', goal:'cd projects', hint:'Use cd dirname' },
+{ level:'4.3', section:4, instructions:'Create nested directories code/src', goal:'mkdir -p code/src', hint:'Use mkdir -p path/to/dir' },
+{ level:'4.4', section:4, instructions:'Enter code/src', goal:'cd code/src', hint:'Use cd path/to/dir' },
+{ level:'4.5', section:4, instructions:'Go back to parent directory', goal:'cd ..', hint:'Use cd .. to move up' },
+{ level:'4.6', section:4, instructions:'Go back to root directory', goal:'cd /', hint:'Use cd / to go home' },
+{ level:'4.7', section:4, instructions:'List contents including hidden files', goal:'ls -a', hint:'Use ls -a' },
+{ level:'4.8', section:4, instructions:'List contents with details and hidden', goal:'ls -la', hint:'Use ls -la' },
+{ level:'4.9', section:4, instructions:'Print current working directory', goal:'pwd', hint:'Use pwd to check location' },
+{ level:'4.10', section:4, instructions:'Remove empty directory src', goal:'rmdir src', hint:'Use rmdir dirname to delete empty dir' },
+
+
+// SECTION 5 — Files & Basic Operations
+{ level:'5.1', section:5, instructions:'Create file main.py', goal:'touch main.py', hint:'Use touch filename' },
+{ level:'5.2', section:5, instructions:'Show contents of main.py', goal:'cat main.py', hint:'Use cat filename' },
+{ level:'5.3', section:5, instructions:'Write message into main.py', goal:'echo "print(\'Hello\')" > main.py', hint:'Use echo "text" > filename' },
+{ level:'5.4', section:5, instructions:'Append message to main.py', goal:'echo "print(\'World\')" >> main.py', hint:'Use echo "text" >> filename to append' },
+{ level:'5.5', section:5, instructions:'Copy main.py to backup.py', goal:'cp main.py backup.py', hint:'Use cp source dest' },
+{ level:'5.6', section:5, instructions:'Rename backup.py to old_main.py', goal:'mv backup.py old_main.py', hint:'Use mv oldname newname' },
+{ level:'5.7', section:5, instructions:'Remove old_main.py', goal:'rm old_main.py', hint:'Use rm filename' },
+{ level:'5.8', section:5, instructions:'List files with details', goal:'ls -l', hint:'Use ls -l' },
+{ level:'5.9', section:5, instructions:'List files sorted by modification time', goal:'ls -lt', hint:'Use ls -lt' },
+{ level:'5.10', section:5, instructions:'Clear the terminal', goal:'clear', hint:'Use clear to clean the screen' },
+
+
+// SECTION 6 — Copying, Moving & Directories
+{ level:'6.1', section:6, instructions:'Create directory src', goal:'mkdir src', hint:'Use mkdir dirname' },
+{ level:'6.2', section:6, instructions:'Move main.py into src', goal:'mv main.py src/', hint:'Use mv file target_dir' },
+{ level:'6.3', section:6, instructions:'Copy src/main.py to current directory', goal:'cp src/main.py .', hint:'Use cp source dest' },
+{ level:'6.4', section:6, instructions:'Create nested directories src/utils/helpers', goal:'mkdir -p src/utils/helpers', hint:'Use mkdir -p path/to/dir' },
+{ level:'6.5', section:6, instructions:'Move src/main.py to src/utils', goal:'mv src/main.py src/utils/', hint:'Use mv source target' },
+{ level:'6.6', section:6, instructions:'Copy src/utils/main.py to src/utils/helpers', goal:'cp src/utils/main.py src/utils/helpers/', hint:'Use cp source target_dir' },
+{ level:'6.7', section:6, instructions:'List files recursively', goal:'ls -R', hint:'Use ls -R to see all files in subdirs' },
+{ level:'6.8', section:6, instructions:'Remove helpers directory', goal:'rm -r src/utils/helpers', hint:'Use rm -r directory' },
+{ level:'6.9', section:6, instructions:'Go back to root directory', goal:'cd /', hint:'Use cd / to return to root' },
+{ level:'6.10', section:6, instructions:'Show present working directory', goal:'pwd', hint:'Use pwd' },
+
+
+// SECTION 7 — Removing & Cleaning Up
+{ level:'7.1', section:7, instructions:'Remove file src/utils/main.py', goal:'rm src/utils/main.py', hint:'Use rm filename' },
+{ level:'7.2', section:7, instructions:'Remove empty directory src/utils', goal:'rmdir src/utils', hint:'Use rmdir dirname' },
+{ level:'7.3', section:7, instructions:'Remove entire src directory recursively', goal:'rm -r src', hint:'Use rm -r dirname' },
+{ level:'7.4', section:7, instructions:'Create directory temp', goal:'mkdir temp', hint:'Use mkdir dirname' },
+{ level:'7.5', section:7, instructions:'Move to temp directory', goal:'cd temp', hint:'Use cd dirname' },
+{ level:'7.6', section:7, instructions:'Create files file1.txt and file2.txt', goal:'touch file1.txt file2.txt', hint:'Use touch file1 file2' },
+{ level:'7.7', section:7, instructions:'List all files', goal:'ls', hint:'Use ls to see files' },
+{ level:'7.8', section:7, instructions:'Remove file1.txt', goal:'rm file1.txt', hint:'Use rm filename' },
+{ level:'7.9', section:7, instructions:'Go back to root directory', goal:'cd /', hint:'Use cd /' },
+{ level:'7.10', section:7, instructions:'Show current directory', goal:'pwd', hint:'Use pwd' },
+
+
+// SECTION 8 — History & Navigation Practice
+{ level:'8.1', section:8, instructions:'Show command history', goal:'history', hint:'Use history' },
+{ level:'8.2', section:8, instructions:'Repeat last command', goal:'!!', hint:'Use !! to repeat last command' },
+{ level:'8.3', section:8, instructions:'Show last 5 commands', goal:'history | tail -n 5', hint:'Use history | tail -n 5' },
+{ level:'8.4', section:8, instructions:'Go to previous directory', goal:'cd -', hint:'Use cd -' },
+{ level:'8.5', section:8, instructions:'Create directory logs', goal:'mkdir logs', hint:'Use mkdir dirname' },
+{ level:'8.6', section:8, instructions:'Enter logs directory', goal:'cd logs', hint:'Use cd dirname' },
+{ level:'8.7', section:8, instructions:'Create log1.txt and log2.txt', goal:'touch log1.txt log2.txt', hint:'Use touch files' },
+{ level:'8.8', section:8, instructions:'List files with details', goal:'ls -l', hint:'Use ls -l' },
+{ level:'8.9', section:8, instructions:'Remove log1.txt', goal:'rm log1.txt', hint:'Use rm filename' },
+{ level:'8.10', section:8, instructions:'Go back to root directory', goal:'cd /', hint:'Use cd /' },
+
+
+// SECTION 9 — Terminal Maintenance & Clearing
+{ level:'9.1', section:9, instructions:'Clear the terminal', goal:'clear', hint:'Use clear' },
+{ level:'9.2', section:9, instructions:'Show hidden files', goal:'ls -a', hint:'Use ls -a to see hidden files' },
+{ level:'9.3', section:9, instructions:'List files in long format with human-readable sizes', goal:'ls -lh', hint:'Use ls -lh' },
+{ level:'9.4', section:9, instructions:'List all files sorted by modification time', goal:'ls -lt', hint:'Use ls -lt' },
+{ level:'9.5', section:9, instructions:'List all files sorted by size', goal:'ls -lS', hint:'Use ls -lS' },
+{ level:'9.6', section:9, instructions:'Print only directories', goal:'ls -d */', hint:'Use ls -d */' },
+{ level:'9.7', section:9, instructions:'Show current directory contents recursively', goal:'ls -R', hint:'Use ls -R' },
+{ level:'9.8', section:9, instructions:'Display last 10 lines of a file log.txt', goal:'tail log.txt', hint:'Use tail filename' },
+{ level:'9.9', section:9, instructions:'Display first 10 lines of a file log.txt', goal:'head log.txt', hint:'Use head filename' },
+{ level:'9.10', section:9, instructions:'Show current processes', goal:'ps', hint:'Use ps to see processes' },
+
+
+// SECTION 10 — Advanced File & System Commands
+{ level:'10.1', section:10, instructions:'Show current directory again', goal:'pwd', hint:'Use pwd' },
+{ level:'10.2', section:10, instructions:'Copy entire directory projects to backup', goal:'cp -r projects backup', hint:'Use cp -r source dest' },
+{ level:'10.3', section:10, instructions:'Remove a directory safely', goal:'rm -r old_dir', hint:'Use rm -r directory_name' },
+{ level:'10.4', section:10, instructions:'Move a file to another directory', goal:'mv notes.txt docs/', hint:'Use mv file target_dir' },
+{ level:'10.5', section:10, instructions:'Find all .txt files in current directory', goal:'find . -name "*.txt"', hint:'Use find with -name pattern' },
+{ level:'10.6', section:10, instructions:'Count lines in file.txt', goal:'wc -l file.txt', hint:'Use wc -l filename' },
+{ level:'10.7', section:10, instructions:'Search for "error" in log.txt', goal:'grep "error" log.txt', hint:'Use grep "pattern" filename' },
+{ level:'10.8', section:10, instructions:'Show disk usage of current directory', goal:'du -h', hint:'Use du -h' },
+{ level:'10.9', section:10, instructions:'Show free memory', goal:'free -h', hint:'Use free -h' },
+{ level:'10.10', section:10, instructions:'Exit the terminal game', goal:'exit', hint:'Type exit' },
+
+
+  /* 
+  ✅ FULLY EXPANDED LESSONS 6–10 SHOULD GO HERE
+  Each lesson should have:
+    - unique level id (e.g., '6.3', '7.2', '10.10', etc.)
+    - section number
+    - instructions
+    - goal (command to type)
+    - hint
+  Make sure total lessons array reaches 100 entries.
+  */
+];
+
+/* =======================
+   FILESYSTEM
+======================= */
+let fs = { '/':{type:'dir',children:{}} };
+let cwd = '/';
 
 function normalizePath(path){
-    if(!path.startsWith("/")) path = cwd + "/" + path;
-    let parts = path.split("/"), stack=[];
-    for(let p of parts){
-        if(!p||p===".") continue;
-        else if(p==="..") stack.pop();
-        else stack.push(p);
-    }
-    return "/" + stack.join("/");
+  if(!path.startsWith('/')) path = cwd + '/' + path;
+  let parts = path.split('/').filter(Boolean);
+  let stack=[];
+  for(let p of parts){
+    if(p==='..') stack.pop();
+    else if(p!=='.') stack.push(p);
+  }
+  return '/' + stack.join('/');
 }
 
-// =====================
-// LOAD LESSONS
-// =====================
-function loadLesson(){ 
-    if(lessonIndex >= lessons.length){ 
-        instr.textContent="🎉 Congratulations! You completed all lessons.";
-        print("🎉 All levels complete! Great work!","success");
+function resolveDir(path){
+  let full=normalizePath(path);
+  let node=fs['/'];
+  if(full==='/') return node;
+  for(let p of full.slice(1).split('/')){
+    if(!node.children[p]||node.children[p].type!=='dir') return null;
+    node=node.children[p];
+  }
+  return node;
+}
+
+function ensurePath(path){
+  let full=normalizePath(path);
+  let node=fs['/'];
+  for(let p of full.slice(1).split('/')){
+    if(!node.children[p]) node.children[p]={type:'dir',children:{}};
+    node=node.children[p];
+  }
+  return node;
+}
+
+/* =======================
+   TERMINAL
+======================= */
+const terminal=document.getElementById('terminal');
+const instructionsDiv=document.getElementById('instructions');
+const input=document.getElementById('commandInput');
+
+function print(msg,type=''){
+  let d=document.createElement('div');
+  if(type) d.className=type;
+  d.textContent=msg;
+  terminal.appendChild(d);
+  terminal.scrollTop=terminal.scrollHeight;
+}
+
+/* =======================
+   LOAD LESSON
+======================= */
+function loadLesson(){
+  if(lessonIndex>=lessons.length){
+    instructionsDiv.textContent='🎉 Course complete.';
+    print(sectionQuotes[Math.floor(Math.random()*sectionQuotes.length)],'quote');
+    return;
+  }
+  let l=lessons[lessonIndex];
+  instructionsDiv.textContent=`[Level ${l.level}] ${l.instructions}`;
+}
+
+/* =======================
+   TRAINING MODE
+======================= */
+let trainingQueue=[];
+function loadTrainingLesson(){
+  trainingQueue=Object.entries(lessonStats)
+    .filter(e=>e[1].missed||e[1].hintsUsed||e[1].answersUsed)
+    .map(e=>lessons.find(l=>l.level===e[0]));
+  if(!trainingQueue.length) trainingQueue=[lessons[0]];
+  trainingMode=true; endlessMode=false;
+  instructionsDiv.textContent=`[Training ${trainingQueue[0].level}] ${trainingQueue[0].instructions}`;
+}
+
+/* =======================
+   ENDLESS MODE
+======================= */
+let endlessQueue=[], endlessCurrent=null;
+function startEndlessMode(){
+  endlessMode=true; trainingMode=false;
+  endlessQueue=[...lessons];
+  endlessQueue.sort(()=>Math.random()-0.5);
+  endlessCurrent=endlessQueue[0];
+  ensurePath(cwd);
+  instructionsDiv.textContent=`[Endless] ${endlessCurrent.instructions}`;
+}
+
+/* =======================
+   EXECUTION
+======================= */
+function execute(cmd) {
+    cmd = cmd.trim();
+    if(!cmd) return;
+    commandHistory.push(cmd);
+
+    const args = cmd.split(' ');
+    const command = args[0];
+
+    // ===== Helper: Normalize commands for lesson check =====
+    function normalizeUserCommand(userCmd) {
+        let c = userCmd.trim();
+
+        // Echo: accept anything after echo
+        if(c.startsWith('echo')) return c;
+
+        // History: strip numbers
+        if(c.startsWith('history')) return 'history';
+
+        // Remove trailing slashes for cp, mv, rm, rmdir, mkdir, cd
+        if(['cp','mv','rm','rmdir','mkdir','cd'].includes(c.split(' ')[0])) {
+            c = c.split(' ').map((part,i)=>{
+                if(i>0) return part.replace(/\/$/,'');
+                return part;
+            }).join(' ');
+        }
+
+        // Sort flags for ls
+        if(c.startsWith('ls')) {
+            const parts = c.split(' ');
+            if(parts[1] && parts[1].startsWith('-')) {
+                const flags = parts[1].slice(1).split('').sort().join('');
+                return 'ls -' + flags;
+            }
+        }
+
+        return c;
+    }
+
+    function normalizeLessonGoal(goal) {
+        let g = goal.trim();
+        if(g.startsWith('echo')) return g;
+        if(g.startsWith('history')) return 'history';
+        if(['cp','mv','rm','rmdir','mkdir','cd'].includes(g.split(' ')[0])) {
+            g = g.split(' ').map((part,i)=>{
+                if(i>0) return part.replace(/\/$/,'');
+                return part;
+            }).join(' ');
+        }
+        if(g.startsWith('ls')) {
+            const parts = g.split(' ');
+            if(parts[1] && parts[1].startsWith('-')) {
+                const flags = parts[1].slice(1).split('').sort().join('');
+                return 'ls -' + flags;
+            }
+        }
+        return g;
+    }
+
+    // ===== SPECIAL COMMANDS =====
+    if(cmd==='train' || cmd==='training'){ loadTrainingLesson(); return; }
+    if(cmd==='endless'){ startEndlessMode(); return; }
+    if(cmd==='exit'){ trainingMode=false; endlessMode=false; loadLesson(); return; }
+
+    if(command==='help' || command==='man'){ print(Object.keys(commandHelp).join(', ')); return; }
+
+    // ===== MENU WITH SECTION DESCRIPTIONS =====
+    if(command==='menu'){
+        print('Commands: help, status, skip, hint, answer, train, endless, exit');
+        print('Sections Overview:');
+        const sectionDescriptions = {
+            1: 'Basic Navigation: Learn pwd, ls, cd, and moving around directories',
+            2: 'File & Directory Management: Create, copy, move, and remove files and folders',
+            3: 'Viewing & Printing Files: cat, head, tail, echo, and file contents',
+            4: 'Directories & Navigation: Nested directories and advanced listing',
+            5: 'Files & Basic Operations: Touch, copy, move, rename, remove, clear',
+            6: 'Copying, Moving & Directories: Practice cp, mv, mkdir -p, ls -R',
+            7: 'Removing & Cleaning Up: Delete files/directories safely',
+            8: 'History & Navigation Practice: Repeat commands, check history, cd -',
+            9: 'Terminal Maintenance & Clearing: ls flags, du, free, ps',
+            10:'Advanced File & System Commands: find, grep, wc, exit, backups'
+        };
+        for(let sec in sectionDescriptions){
+            print(`${sec}: ${sectionDescriptions[sec]}`);
+        }
         return;
     }
-    instr.textContent=`📘 \( {lessons[lessonIndex].title}\n\n \){lessons[lessonIndex].text}`;
-    state.hearts = 5; // Refill hearts on new lesson
-    state.hintCount=0;
-    print(`Lesson \( {lessonIndex+1}: \){lessons[lessonIndex].title} started. ❤️ ${state.hearts}`,`success`);
-    if(!state.training && (lessonIndex===0 || Object.values(state.mistakes).some(v=>v>=2))){
-        print("💡 Tip: Use `training` or `train` to practice weak commands.","hint");
+
+    if(command==='status'){ print(`Lesson ${lessonIndex+1}/${lessons.length} | Training:${trainingMode} | Endless:${endlessMode}`); return; }
+
+    // ===== HINT / ANSWER / SKIP =====
+    let l = endlessMode ? endlessCurrent : trainingMode ? trainingQueue[0] : lessons[lessonIndex];
+
+    if(command==='hint'){
+        lessonStats[l.level] = lessonStats[l.level] || {missed:0, hintsUsed:0, answersUsed:0};
+        lessonStats[l.level].hintsUsed++;
+        print(l.hint); 
+        return;
+    }
+
+    if(command==='answer'){
+        lessonStats[l.level] = lessonStats[l.level] || {missed:0, hintsUsed:0, answersUsed:0};
+        lessonStats[l.level].answersUsed++;
+        print(`Answer: ${l.goal}`, 'quote'); 
+        return;
+    }
+
+    if(command==='skip'){
+        if(args[1]){
+            if(!isNaN(args[1])) {
+                // numeric skip
+                lessonIndex += parseInt(args[1]);
+            } else {
+                // skip to specific lesson level
+                const foundIndex = lessons.findIndex(l=>l.level===args[1]);
+                if(foundIndex !== -1) lessonIndex = foundIndex;
+                else { print('Lesson not found','error'); return; }
+            }
+        } else {
+            lessonIndex++;
+        }
+
+        if(lessonIndex < 0) lessonIndex = 0;
+        if(lessonIndex >= lessons.length) lessonIndex = lessons.length-1;
+
+        // Update instructions for current mode
+        if(!endlessMode && !trainingMode){
+            loadLesson();
+        } else if(endlessMode){
+            endlessQueue.push(endlessQueue.shift());
+            endlessCurrent = endlessQueue[0];
+            instructionsDiv.textContent = `[Endless] ${endlessCurrent.instructions}`;
+        } else if(trainingMode){
+            trainingQueue.push(trainingQueue.shift());
+            instructionsDiv.textContent = `[Training ${trainingQueue[0].level}] ${trainingQueue[0].instructions}`;
+        }
+
+        print(`⏩ Skipped to ${args[1] || 'next'} lesson`, 'quote');
+        return;
+    }
+
+    // ===== NORMAL COMMANDS =====
+    switch(command){
+        case 'pwd': print(cwd); break;
+        case 'ls': 
+            let lsFlags = args[1] ? args[1].slice(1).split('').sort().join('') : '';
+            print(Object.keys(resolveDir(cwd).children).join(' ')); 
+            break;
+        case 'cd': 
+            if(!args[1]) args[1] = '/';
+            let target = args[1]==='..' ? cwd.split('/').slice(0,-1).join('/')||'/' : args[1];
+            let t=resolveDir(target);
+            if(t) cwd=normalizePath(target);
+            else print('No such dir','error'); 
+            break;
+        case 'mkdir': ensurePath(args[1]); break;
+        case 'touch': {
+            let dirNode = resolveDir(cwd);
+            args.slice(1).forEach(f=> dirNode.children[f]={type:'file', content:''});
+            break;
+        }
+        case 'cat': {
+            let fileNode = resolveDir(cwd).children[args[1]];
+            if(fileNode && fileNode.type==='file') print(fileNode.content||''); 
+            else print('No such file','error'); 
+            break;
+        }
+        case 'echo': print(args.slice(1).join(' ')); break;
+        case 'rm': args.slice(1).forEach(f=> delete resolveDir(cwd).children[f]); break;
+        case 'cp': {
+            let src = args[1];
+            let dest = args[2];
+            let destNode = resolveDir(cwd).children[dest];
+            if(destNode && destNode.type==='dir') dest = dest + '/' + src;
+            resolveDir(cwd).children[dest] = JSON.parse(JSON.stringify(resolveDir(cwd).children[src]));
+            break;
+        }
+        case 'mv': {
+            let src = args[1];
+            let dest = args[2];
+            let destNode = resolveDir(cwd).children[dest];
+            if(destNode && destNode.type==='dir') dest = dest + '/' + src;
+            resolveDir(cwd).children[dest] = resolveDir(cwd).children[src];
+            delete resolveDir(cwd).children[src];
+            break;
+        }
+        case 'rmdir': delete resolveDir(cwd).children[args[1]]; break;
+        case 'clear': terminal.innerHTML=''; break;
+        case 'history': commandHistory.forEach((c,i)=>print(`${i+1} ${c}`)); break;
+        default: print('Command not recognized','error');
+    }
+
+    // ===== LESSON COMPLETION CHECK =====
+    l = endlessMode ? endlessCurrent : trainingMode ? trainingQueue[0] : lessons[lessonIndex];
+    if(normalizeUserCommand(cmd) === normalizeLessonGoal(l.goal)){
+        print('✅ Correct', 'success');
+
+        if (endlessMode){
+            endlessQueue.push(endlessQueue.shift());
+            endlessCurrent = endlessQueue[0];
+            instructionsDiv.textContent = `[Endless] ${endlessCurrent.instructions}`;
+        } else if (trainingMode){
+            trainingQueue.push(trainingQueue.shift());
+            instructionsDiv.textContent = `[Training ${trainingQueue[0].level}] ${trainingQueue[0].instructions}`;
+        } else {
+            let prevSection = l.section;
+            lessonIndex++;
+            if (lessons[lessonIndex] && lessons[lessonIndex].section !== prevSection){
+                print(sectionQuotes[Math.floor(Math.random() * sectionQuotes.length)], 'quote');
+            }
+            loadLesson();
+        }
+    } else {
+        lessonStats[l.level] = lessonStats[l.level] || { missed:0, hintsUsed:0, answersUsed:0 };
+        lessonStats[l.level].missed++;
     }
 }
 
-// =====================
-// INPUT HANDLING
-// =====================
-input.addEventListener("keydown", e=>{
-    if(e.key==="Enter"){ 
-        execute(input.value.trim()); 
-        input.value=""; 
-        input.focus(); 
-        saveProgress(); 
-    }
+
+
+
+
+
+ // <-- THIS IS THE END OF execute(cmd)
+
+
+/* =======================
+   INPUT
+======================= */
+input.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    print(`$ ${input.value}`);
+    execute(input.value);
+    input.value='';
+  }
 });
-document.body.addEventListener("click",()=>input.focus());
 
-// =====================
-// COMMAND EXECUTION (with gamification)
-// =====================
-function execute(cmdline){
-    state.lastCmd = cmdline;
-    if(cmdline) print(`$ ${cmdline}`, "dim");
-    let [cmd, ...args] = cmdline.split(" ");
-    let arg = args.join(" ");
-
-    let success = false;
-
-    // Debug info if enabled
-    if(debugMode) print(`[DEBUG] cmd=\( {cmd} | arg= \){arg} | hearts=\( {state.hearts} | streak= \){state.streak} | xp=${state.xp}`, "dim");
-
-    // HELP
-    if(cmd==="help"||cmdline.endsWith("-h")) 
-        print("Commands:\npwd, ls, ls -l, cd, touch, cat, whoami, id, stat, chmod, file, which, wget, curl, apt update/install/upgrade, dpkg -l, ps aux, free -h, df -h, crontab -l, ip addr, nano, bash, hint, skip, training, train, status, debug on/off\n💡 `train` starts practice mode.","hint");
-
-    // STATUS (new diagnostic command)
-    else if(cmd === "status") {
-        let pct = Math.round((lessonIndex / lessons.length) * 100);
-        print(`Progress: Lesson \( {lessonIndex+1}/ \){lessons.length} (\( {pct}%) | XP: \){state.xp} | ❤️ \( {state.hearts}/5 | 🔥 Streak: \){state.streak}`, "hint");
-    }
-
-    // DEBUG toggle
-    else if(cmd === "debug") {
-        debugMode = arg === "on";
-        print(`Debug mode ${debugMode ? "ON (extra info)" : "OFF"}`, debugMode ? "success" : "dim");
-    }
-
-    // HINT
-    else if(cmd==="hint"){ 
-        print(lessons[lessonIndex].hint,"hint"); 
-        state.hintCount++; 
-    }
-
-    // NAVIGATION & FILES (your original)
-    else if(cmd==="pwd") { print(cwd); success = true; }
-    else if(cmd==="ls" && args[0]==="-l"){
-        let dir = resolveDir(cwd);
-        if(dir) Object.entries(dir).forEach(([n,f])=>print(`\( {f.perm} \){user} ${n}`));
-        else print("No such directory","error");
-        success = true;
-    }
-    else if(cmd==="ls"){
-        let dir = resolveDir(cwd);
-        if(dir) print(Object.keys(dir).join(" "));
-        else print("No such directory","error");
-        success = true;
-    }
-    else if(cmd==="cd"){ 
-        let target = normalizePath(arg||"/");
-        if(resolveDir(target)) { cwd=target; success = true; }
-        else print("No such directory","error");
-    }
-    else if(cmd==="touch"){ 
-        let dir = resolveDir(cwd);
-        if(dir && arg) dir[arg]={content:"",perm:"rw-r--r--",type:"text"}; 
-        print("File created"); 
-        success = true;
-    }
-    else if(cmd==="cat"){ 
-        let dir = resolveDir(cwd);
-        let f = dir ? dir[arg] : null;
-        if(f && f.content!==undefined) print(f.content);
-        else print("No such file","error"); 
-        success = true;
-    }
-
-    // TRACK LESSON PROGRESS + GAMIFICATION
-    if(lessons[lessonIndex]?.goal && lessons[lessonIndex].goal()){
-        success = true;
-        state.testProgress++;
-        let xpGain = lessons[lessonIndex].title.includes("Final") ? 20 : 10;
-        state.xp += xpGain;
-        state.streak++;
-        print(`Correct! +\( {xpGain} XP 🎉 | Streak: \){state.streak} 🔥`, "success");
-
-        if(!lessons[lessonIndex].title.includes("Final") && !state.training){ 
-            lessonIndex++; 
-            state.testProgress=0; 
-            loadLesson(); 
-        } else if(lessons[lessonIndex].title.includes("Final") && state.testProgress>=5){ 
-            lessonIndex++; 
-            state.testProgress=0; 
-            print("🎉 Final complete! Moving on.","success");
-            if(lessonIndex<lessons.length) loadLesson();
-        }
-    }
-
-    // Mistake handling (lose heart if active lesson and not training)
-    if(!success && cmd && !["help","status","debug","hint"].includes(cmd) && !state.training){
-        if(state.hearts > 0){
-            state.hearts--;
-            print(`Mistake! -1 ❤️ (${state.hearts} left) 😔`, "error");
-        }
-        state.streak = 0;
-    }
-
-    // TRAINING MODE
-    if(state.training){
-        let current = state.trainingQueue[state.trainingIndex];
-        if(current && current.goal()){ 
-            state.trainingIndex++; 
-            loadTrainingLesson(); 
-        }
-    }
-
-    saveProgress();
-}
-
-// =====================
-// TRAINING MODE FIXED
-// =====================
-function startTraining(){
-    state.training=true;
-    let candidates = lessons.filter(l=>!l.title.includes("Final") && (state.mistakes[l.hint] || lessonIndex <= lessons.indexOf(l)));
-    state.trainingQueue=[];
-    for(let l of candidates){
-        let weight = Math.max(1,(state.mistakes[l.hint]||0));
-        for(let i=0;i<weight;i++) state.trainingQueue.push(l);
-    }
-    shuffle(state.trainingQueue);
-    state.trainingIndex=0;
-    print("🎯 Training session started!","hint");
-    loadTrainingLesson();
-}
-function loadTrainingLesson(){
-    if(state.trainingIndex>=state.trainingQueue.length){ 
-        print("🎉 Training complete!","success"); 
-        state.training=false; 
-        loadLesson(); 
-        return; 
-    }
-    let l=state.trainingQueue[state.trainingIndex];
-    instr.textContent=`🎯 Training: \( {l.title}\n\n \){l.text}`;
-}
-
-// =====================
-// LESSONS 7-10 (Advanced) - your original push
-// =====================
-lessons.push(
-{ title:"Level 7.1 — Loops in scripts", text:"Add a for loop in script.sh that prints numbers 1-5.", goal:()=>resolveDir(cwd)["script.sh"].content.includes("for"), hint:"for i in 1 2 3 4 5; do echo $i; done" },
-{ title:"Level 7.2 — Variables", text:"Use a variable in script.sh to store a message and echo it.", goal:()=>resolveDir(cwd)["script.sh"].content.includes("msg="), hint:"msg='Hello'; echo $msg" },
-{ title:"🧪 Level 7 Final Test", text:"Write a script using a loop and variable. Run it.", goal:()=>state.testProgress>=2, hint:"Step by step." },
-
-{ title:"Level 8.1 — Redirection", text:"Redirect output of echo 'Hello' to hello.txt.", goal:()=>resolveDir(cwd)["hello.txt"], hint:"echo 'Hello' > hello.txt" },
-{ title:"Level 8.2 — Pipes", text:"Pipe output of echo 'one two three' to grep 'two'.", goal:()=>state.lastCmd==="echo 'one two three' | grep 'two'", hint:"Use | grep" },
-{ title:"Level 8.3 — Filters", text:"Use awk to print the first column of a text file.", goal:()=>state.lastCmd.startsWith("awk"), hint:"awk '{print $1}' file.txt" },
-{ title:"🧪 Level 8 Final Test", text:"Use redirection, pipes, and filters on sample text.", goal:()=>state.testProgress>=3, hint:"Try one at a time." },
-
-{ title:"Level 9.1 — File ownership", text:"Simulate changing ownership of notes.txt to another user.", goal:()=>state.lastCmd==="chown user:group notes.txt", hint:"chown user:group notes.txt" },
-{ title:"Level 9.2 — Permissions review", text:"Check permissions and explain meaning.", goal:()=>state.lastCmd==="stat notes.txt", hint:"stat notes.txt" },
-{ title:"Level 9.3 — Sudo simulation", text:"Run a command with elevated privileges.", goal:()=>state.lastCmd.startsWith("sudo"), hint:"sudo ls /root" },
-{ title:"Level 9.4 — Network commands", text:"Ping 127.0.0.1 and check network info.", goal:()=>state.lastCmd==="ping 127.0.0.1" || state.lastCmd==="ip addr", hint:"ping, ip addr" },
-{ title:"🧪 Level 9 Final Test", text:"Ownership, permissions, sudo, networking.", goal:()=>state.testProgress>=4, hint:"Step by step." },
-
-{ title:"Level 10.1 — Cron automation", text:"Add a simulated cron job to run script.sh every minute.", goal:()=>state.lastCmd==="crontab -l", hint:"crontab -e" },
-{ title:"Level 10.2 — Monitoring", text:"Check running processes and memory.", goal:()=>state.lastCmd==="ps aux" && state.lastCmd==="free -h", hint:"ps aux, free -h" },
-{ title:"Level 10.3 — Combining commands", text:"Use pipe and redirection together.", goal:()=>state.lastCmd.includes("|") && state.lastCmd.includes(">"), hint:"cat file.txt | grep 'pattern' > out.txt" },
-{ title:"🧪 Level 10 Final Test", text:"Simulate sysadmin tasks, monitoring, cron, pipes, redirection.", goal:()=>state.testProgress>=3, hint:"Follow carefully." }
-);
-
-// =====================
-// MOBILE & UX ENHANCEMENTS
-// =====================
-function resizeTerminal(){
-    let h = window.innerHeight - instr.offsetHeight - input.parentElement.offsetHeight - 20;
-    term.style.height = h+"px";
-}
-window.addEventListener("resize", resizeTerminal);
-resizeTerminal();
-input.focus(); // auto-focus input on load
-
-print("📱 Mobile-ready: input focused, terminal auto-scroll, instructions adjust height.");
-print("Welcome back! Type 'status' for progress or 'help' for commands.","success");
-
-// START THE GAME
+/* =======================
+   INIT
+======================= */
+print('Welcome to Learn Linux Terminal Game');
+print('Type help or man to see commands');
+print('Use hint, answer, skip, train, endless');
 loadLesson();
 
-// =====================
-// FINALIZE HTML
-// =====================
+function resizeTerminal(){
+  terminal.style.height=(window.innerHeight-instructionsDiv.offsetHeight-input.offsetHeight-30)+'px';
+}
+window.addEventListener('resize',resizeTerminal);
+resizeTerminal();
 </script>
 </body>
 </html>
