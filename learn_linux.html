@@ -35,17 +35,52 @@ body{margin:0;font-family:monospace;display:flex;flex-direction:column;height:10
 </div>
 
 <script>
+// Global error catcher – prints errors directly to terminal for easy copy-paste debugging on phone
+window.addEventListener('error', function(e) {
+  print("JS ERROR: " + e.message + " (around line " + e.lineno + ")", "error");
+});
+
 // =====================
 // STATE & FILESYSTEM
 // =====================
 let cwd="/home/student", user="student";
 let fs={"/":{home:{student:{"readme.txt":{content:"Welcome to Learn Linux.\nLinux rewards curiosity.",perm:"rw-r--r--",type:"text"},"script.sh":{content:"# /bin/bash\necho Hello",perm:"rw-------",type:"shell script"}}}}};
-let state={lastCmd:"", testProgress:0, packages:[], mistakes:{}, training:false, trainingQueue:[], trainingIndex:0, hintCount:0};
+let state={lastCmd:"", testProgress:0, packages:[], mistakes:{}, training:false, trainingQueue:[], trainingIndex:0, hintCount:0,
+           xp: 0, hearts: 5, streak: 0};  // Added gamification fields
+let lessonIndex=0;
+let debugMode = false;  // For extra debug output
+
+// Load saved progress from localStorage
+if (localStorage.getItem('learnLinuxProgress')) {
+  const saved = JSON.parse(localStorage.getItem('learnLinuxProgress'));
+  lessonIndex = saved.lessonIndex || 0;
+  state.xp = saved.xp || 0;
+  state.hearts = saved.hearts || 5;
+  state.streak = saved.streak || 0;
+}
+
+// Save progress to localStorage
+function saveProgress() {
+  const data = {
+    lessonIndex: lessonIndex,
+    xp: state.xp,
+    hearts: state.hearts,
+    streak: state.streak
+  };
+  localStorage.setItem('learnLinuxProgress', JSON.stringify(data));
+}
+
+// Shuffle for training mode (was missing)
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    let j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
 
 // =====================
-// LESSONS 1-6
+// LESSONS 1-6 (your original)
 // =====================
-let lessonIndex=0;
 const lessons=[
 { title:"Level 1.1 — Where am I?", text:"Show your current directory.", goal:()=>state.lastCmd==="pwd", hint:"pwd" },
 { title:"Level 1.2 — List files", text:"List the files in this directory.", goal:()=>state.lastCmd==="ls", hint:"ls" },
@@ -126,12 +161,15 @@ function normalizePath(path){
 function loadLesson(){ 
     if(lessonIndex >= lessons.length){ 
         instr.textContent="🎉 Congratulations! You completed all lessons.";
+        print("🎉 All levels complete! Great work!","success");
         return;
     }
-    instr.textContent=`📘 ${lessons[lessonIndex].title}\n\n${lessons[lessonIndex].text}`;
-    state.hintCount=0; // reset hints per lesson
+    instr.textContent=`📘 \( {lessons[lessonIndex].title}\n\n \){lessons[lessonIndex].text}`;
+    state.hearts = 5; // Refill hearts on new lesson
+    state.hintCount=0;
+    print(`Lesson \( {lessonIndex+1}: \){lessons[lessonIndex].title} started. ❤️ ${state.hearts}`,`success`);
     if(!state.training && (lessonIndex===0 || Object.values(state.mistakes).some(v=>v>=2))){
-        print("💡 Tip: Use `training` or `train` anytime to practice commands you struggle with.","hint");
+        print("💡 Tip: Use `training` or `train` to practice weak commands.","hint");
     }
 }
 
@@ -149,7 +187,7 @@ input.addEventListener("keydown", e=>{
 document.body.addEventListener("click",()=>input.focus());
 
 // =====================
-// COMMAND EXECUTION
+// COMMAND EXECUTION (with gamification)
 // =====================
 function execute(cmdline){
     state.lastCmd = cmdline;
@@ -157,9 +195,26 @@ function execute(cmdline){
     let [cmd, ...args] = cmdline.split(" ");
     let arg = args.join(" ");
 
+    let success = false;
+
+    // Debug info if enabled
+    if(debugMode) print(`[DEBUG] cmd=\( {cmd} | arg= \){arg} | hearts=\( {state.hearts} | streak= \){state.streak} | xp=${state.xp}`, "dim");
+
     // HELP
     if(cmd==="help"||cmdline.endsWith("-h")) 
-        print("Commands:\npwd, ls, ls -l, cd, touch, cat, whoami, id, stat, chmod, file, which, wget, curl, apt update/install/upgrade, dpkg -l, ps aux, free -h, df -h, crontab -l, ip addr, nano, bash, hint, skip, training, train\n💡 `train` / `training` starts practice mode for your mistakes.");
+        print("Commands:\npwd, ls, ls -l, cd, touch, cat, whoami, id, stat, chmod, file, which, wget, curl, apt update/install/upgrade, dpkg -l, ps aux, free -h, df -h, crontab -l, ip addr, nano, bash, hint, skip, training, train, status, debug on/off\n💡 `train` starts practice mode.","hint");
+
+    // STATUS (new diagnostic command)
+    else if(cmd === "status") {
+        let pct = Math.round((lessonIndex / lessons.length) * 100);
+        print(`Progress: Lesson \( {lessonIndex+1}/ \){lessons.length} (\( {pct}%) | XP: \){state.xp} | ❤️ \( {state.hearts}/5 | 🔥 Streak: \){state.streak}`, "hint");
+    }
+
+    // DEBUG toggle
+    else if(cmd === "debug") {
+        debugMode = arg === "on";
+        print(`Debug mode ${debugMode ? "ON (extra info)" : "OFF"}`, debugMode ? "success" : "dim");
+    }
 
     // HINT
     else if(cmd==="hint"){ 
@@ -167,54 +222,73 @@ function execute(cmdline){
         state.hintCount++; 
     }
 
-    // NAVIGATION & FILES
-    else if(cmd==="pwd") print(cwd);
+    // NAVIGATION & FILES (your original)
+    else if(cmd==="pwd") { print(cwd); success = true; }
     else if(cmd==="ls" && args[0]==="-l"){
         let dir = resolveDir(cwd);
-        if(dir) Object.entries(dir).forEach(([n,f])=>print(`${f.perm} ${user} ${n}`));
+        if(dir) Object.entries(dir).forEach(([n,f])=>print(`\( {f.perm} \){user} ${n}`));
         else print("No such directory","error");
+        success = true;
     }
     else if(cmd==="ls"){
         let dir = resolveDir(cwd);
         if(dir) print(Object.keys(dir).join(" "));
         else print("No such directory","error");
+        success = true;
     }
     else if(cmd==="cd"){ 
         let target = normalizePath(arg||"/");
-        if(resolveDir(target)) cwd=target;
+        if(resolveDir(target)) { cwd=target; success = true; }
         else print("No such directory","error");
     }
     else if(cmd==="touch"){ 
         let dir = resolveDir(cwd);
-        if(dir) dir[arg]={content:"",perm:"rw-r--r--",type:"text"}; 
+        if(dir && arg) dir[arg]={content:"",perm:"rw-r--r--",type:"text"}; 
         print("File created"); 
+        success = true;
     }
     else if(cmd==="cat"){ 
         let dir = resolveDir(cwd);
         let f = dir ? dir[arg] : null;
         if(f && f.content!==undefined) print(f.content);
         else print("No such file","error"); 
+        success = true;
     }
 
-    // TRACK LESSON PROGRESS
+    // TRACK LESSON PROGRESS + GAMIFICATION
     if(lessons[lessonIndex]?.goal && lessons[lessonIndex].goal()){
+        success = true;
         state.testProgress++;
+        let xpGain = lessons[lessonIndex].title.includes("Final") ? 20 : 10;
+        state.xp += xpGain;
+        state.streak++;
+        print(`Correct! +\( {xpGain} XP 🎉 | Streak: \){state.streak} 🔥`, "success");
+
         if(!lessons[lessonIndex].title.includes("Final") && !state.training){ 
             lessonIndex++; 
             state.testProgress=0; 
             loadLesson(); 
-        } else if(lessons[lessonIndex].title.includes("Final") && state.testProgress>=lessons[lessonIndex].goal()){ 
+        } else if(lessons[lessonIndex].title.includes("Final") && state.testProgress>=5){ 
             lessonIndex++; 
             state.testProgress=0; 
-            print("🎉 Lesson complete! Moving to next lesson.","success");
+            print("🎉 Final complete! Moving on.","success");
             if(lessonIndex<lessons.length) loadLesson();
         }
+    }
+
+    // Mistake handling (lose heart if active lesson and not training)
+    if(!success && cmd && !["help","status","debug","hint"].includes(cmd) && !state.training){
+        if(state.hearts > 0){
+            state.hearts--;
+            print(`Mistake! -1 ❤️ (${state.hearts} left) 😔`, "error");
+        }
+        state.streak = 0;
     }
 
     // TRAINING MODE
     if(state.training){
         let current = state.trainingQueue[state.trainingIndex];
-        if(current.goal()){ 
+        if(current && current.goal()){ 
             state.trainingIndex++; 
             loadTrainingLesson(); 
         }
@@ -247,10 +321,11 @@ function loadTrainingLesson(){
         return; 
     }
     let l=state.trainingQueue[state.trainingIndex];
-    instr.textContent=`🎯 Training: ${l.title}\n\n${l.text}`;
+    instr.textContent=`🎯 Training: \( {l.title}\n\n \){l.text}`;
 }
+
 // =====================
-// LESSONS 7-10 (Advanced)
+// LESSONS 7-10 (Advanced) - your original push
 // =====================
 lessons.push(
 { title:"Level 7.1 — Loops in scripts", text:"Add a for loop in script.sh that prints numbers 1-5.", goal:()=>resolveDir(cwd)["script.sh"].content.includes("for"), hint:"for i in 1 2 3 4 5; do echo $i; done" },
@@ -285,8 +360,11 @@ window.addEventListener("resize", resizeTerminal);
 resizeTerminal();
 input.focus(); // auto-focus input on load
 
-// Auto-scroll terminal handled in print()
 print("📱 Mobile-ready: input focused, terminal auto-scroll, instructions adjust height.");
+print("Welcome back! Type 'status' for progress or 'help' for commands.","success");
+
+// START THE GAME
+loadLesson();
 
 // =====================
 // FINALIZE HTML
