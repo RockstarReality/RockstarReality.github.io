@@ -35,67 +35,262 @@ body{margin:0;font-family:monospace;display:flex;flex-direction:column;height:10
 </div>
 
 <script>
-// STATE
-let cwd = "/home/student", user = "student";
-let fs = {"/":{home:{student:{"readme.txt":{content:"Welcome to Learn Linux.\nLinux rewards curiosity.",perm:"rw-r--r--",type:"text"},"script.sh":{content:"# /bin/bash\necho Hello",perm:"rw-------",type:"shell script"}}}}};
-let lessonIndex = 0;
-let state = {
-  lastCmd: "", testProgress: 0, packages: [], mistakes: {}, training: false,
-  trainingQueue: [], trainingIndex: 0, hintCount: 0,
-  xp: 0, hearts: 5, streak: 0, achievements: []
-};
+// =====================
+// STATE & FILESYSTEM
+// =====================
+let cwd="/home/student", user="student";
+let fs={"/":{home:{student:{"readme.txt":{content:"Welcome to Learn Linux.\nLinux rewards curiosity.",perm:"rw-r--r--",type:"text"},"script.sh":{content:"# /bin/bash\necho Hello",perm:"rw-------",type:"shell script"}}}}};
+let state={lastCmd:"", testProgress:0, packages:[], mistakes:{}, training:false, trainingQueue:[], trainingIndex:0, hintCount:0};
 
-// SHUFFLE
-function shuffle(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    let j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-}
+// =====================
+// LESSONS 1-6
+// =====================
+let lessonIndex=0;
+const lessons=[
+{ title:"Level 1.1 — Where am I?", text:"Show your current directory.", goal:()=>state.lastCmd==="pwd", hint:"pwd" },
+{ title:"Level 1.2 — List files", text:"List the files in this directory.", goal:()=>state.lastCmd==="ls", hint:"ls" },
+{ title:"Level 1.3 — Move around", text:"Change into root /.", goal:()=>cwd==="/", hint:"cd /" },
+{ title:"Level 1.4 — Go back home", text:"Return to home.", goal:()=>cwd==="/home/student", hint:"cd /home/student" },
+{ title:"Level 1.5 — Create a file", text:"Create notes.txt.", goal:()=>resolveDir(cwd)["notes.txt"], hint:"touch notes.txt" },
+{ title:"Level 1.6 — Read a file", text:"Read readme.txt.", goal:()=>state.lastCmd==="cat readme.txt", hint:"cat readme.txt" },
+{ title:"Level 2.1 — Who are you?", text:"Show your user.", goal:()=>state.lastCmd==="whoami", hint:"whoami" },
+{ title:"Level 2.2 — Identity details", text:"Show UID/GID.", goal:()=>state.lastCmd==="id", hint:"id" },
+{ title:"Level 2 Final Test", text:"Navigate, list, create/read files, show user.", goal:()=>state.testProgress>=5, hint:"Take one command at a time." },
 
-// LESSONS (shortened for brevity – add full list back if needed)
-const lessons = [
-  { title:"Level 1.1 — Where am I?", text:"Show your current directory.", goal:()=>state.lastCmd==="pwd", hint:"pwd" },
-  // ... add the rest of your lessons here ...
-  { title:"Level 10 Final Test", text:"Simulate sysadmin tasks.", goal:()=>state.testProgress>=3, hint:"Follow carefully." }
+{ title:"Level 3.1 — Long listing", text:"List files with details.", goal:()=>state.lastCmd==="ls -l", hint:"ls -l" },
+{ title:"Level 3.2 — File type", text:"What is script.sh?", goal:()=>state.lastCmd==="file script.sh", hint:"file script.sh" },
+{ title:"Level 3.3 — Make executable", text:"Make script.sh executable for you.", goal:()=>resolveDir(cwd)["script.sh"].perm.startsWith("rwx"), hint:"chmod u+x script.sh" },
+{ title:"Level 3.4 — Locate command", text:"Where is ls?", goal:()=>state.lastCmd==="which ls", hint:"which ls" },
+{ title:"Level 3 Final Test", text:"List permissions, file type, chmod, which command.", goal:()=>state.testProgress>=4, hint:"Step by step." },
+
+{ title:"Level 4.1 — Download a file", text:"Simulate downloading a file using wget.", goal:()=>resolveDir(cwd)["downloaded.txt"], hint:"wget http://example.com/file.txt" },
+{ title:"Level 4.2 — Use curl", text:"Simulate downloading another file with curl.", goal:()=>resolveDir(cwd)["curlfile.txt"], hint:"curl -O http://example.com/other.txt" },
+{ title:"Level 4.3 — Verify download", text:"Check file type of downloaded.txt.", goal:()=>state.lastCmd==="file downloaded.txt", hint:"file downloaded.txt" },
+{ title:"Level 4 Final Test", text:"Use wget, curl, check file type. Practice safe handling.", goal:()=>state.testProgress>=3, hint:"Step by step." },
+
+{ title:"Level 5.1 — Update package list", text:"Update the system package list using apt update.", goal:()=>state.lastCmd==="apt update", hint:"apt update" },
+{ title:"Level 5.2 — Install a package", text:"Install a package (simulate).", goal:()=>state.packages.includes("nano"), hint:"apt install nano" },
+{ title:"Level 5.3 — List installed packages", text:"See installed packages with dpkg -l.", goal:()=>state.lastCmd==="dpkg -l", hint:"dpkg -l" },
+{ title:"Level 5.4 — Upgrade packages", text:"Upgrade installed packages.", goal:()=>state.lastCmd==="apt upgrade", hint:"apt upgrade" },
+{ title:"Level 5 Final Test", text:"Update, install, list packages, upgrade safely.", goal:()=>state.testProgress>=4, hint:"Step by step." },
+
+{ title:"Level 6.1 — List processes", text:"Show running processes.", goal:()=>state.lastCmd==="ps aux", hint:"ps aux" },
+{ title:"Level 6.2 — Check memory", text:"Show memory usage.", goal:()=>state.lastCmd==="free -h", hint:"free -h" },
+{ title:"Level 6.3 — Disk usage", text:"Show disk usage.", goal:()=>state.lastCmd==="df -h", hint:"df -h" },
+{ title:"Level 6.4 — Schedule a cron job", text:"Simulate adding a cron job.", goal:()=>state.lastCmd==="crontab -l", hint:"crontab -l" },
+{ title:"Level 6.5 — Network info", text:"Check IP addresses.", goal:()=>state.lastCmd==="ip addr", hint:"ip addr" },
+{ title:"Level 6 Final Test", text:"Processes, memory, disk, cron, network.", goal:()=>state.testProgress>=5, hint:"Step by step." }
 ];
-
-// UI
+// =====================
+// UI ELEMENTS
+// =====================
 const instr = document.getElementById("instructions");
 const term = document.getElementById("terminal");
 const input = document.getElementById("commandInput");
 
 function print(txt, cls="") {
-  let d = document.createElement("div");
-  d.textContent = txt;
-  if(cls) d.className = cls;
-  term.appendChild(d);
-  term.scrollTop = term.scrollHeight;
+    let d = document.createElement("div");
+    d.textContent = txt;
+    if(cls) d.className = cls;
+    term.appendChild(d);
+    term.scrollTop = term.scrollHeight;
 }
 
-// FILESYSTEM HELPERS (unchanged)
-function resolveDir(path){ /* ... same as before ... */ }
-function normalizePath(path){ /* ... same as before ... */ }
-
-// FIXED loadLesson – using BACKTICKS + fallback
-function loadLesson() {
-  if (lessonIndex >= lessons.length) {
-    instr.textContent = "🎉 Congratulations! You completed all lessons.";
-    return;
-  }
-  const lesson = lessons[lessonIndex] || {};
-  const title = lesson.title || "(missing title – bug in lessons array)";
-  const text  = lesson.text  || "(missing instructions – please check lessons array)";
-  instr.textContent = `📘 \( {title}\n\n \){text}`;
-  state.hintCount = 0;
-  state.hearts = 5; // reset hearts per lesson
-  print(`📘 Now on: ${title}`,"success");
+// =====================
+// FILESYSTEM HELPERS
+// =====================
+function resolveDir(path){
+    let p = path.split("/").filter(Boolean);
+    let c = fs["/"];
+    for(let x of p){
+        if(c[x] && typeof c[x]==="object") c = c[x];
+        else return null;
+    }
+    return c;
 }
 
-// START
-print("Welcome to Learn Linux Trainer – type 'help' or 'status'","hint");
-loadLesson();  // This should now show correct title + text
-input.focus();
+function normalizePath(path){
+    if(!path.startsWith("/")) path = cwd + "/" + path;
+    let parts = path.split("/"), stack=[];
+    for(let p of parts){
+        if(!p||p===".") continue;
+        else if(p==="..") stack.pop();
+        else stack.push(p);
+    }
+    return "/" + stack.join("/");
+}
+
+// =====================
+// LOAD LESSONS
+// =====================
+function loadLesson(){ 
+    if(lessonIndex >= lessons.length){ 
+        instr.textContent="🎉 Congratulations! You completed all lessons.";
+        return;
+    }
+    instr.textContent=`📘 ${lessons[lessonIndex].title}\n\n${lessons[lessonIndex].text}`;
+    state.hintCount=0; // reset hints per lesson
+    if(!state.training && (lessonIndex===0 || Object.values(state.mistakes).some(v=>v>=2))){
+        print("💡 Tip: Use `training` or `train` anytime to practice commands you struggle with.","hint");
+    }
+}
+
+// =====================
+// INPUT HANDLING
+// =====================
+input.addEventListener("keydown", e=>{
+    if(e.key==="Enter"){ 
+        execute(input.value.trim()); 
+        input.value=""; 
+        input.focus(); 
+        saveProgress(); 
+    }
+});
+document.body.addEventListener("click",()=>input.focus());
+
+// =====================
+// COMMAND EXECUTION
+// =====================
+function execute(cmdline){
+    state.lastCmd = cmdline;
+    if(cmdline) print(`$ ${cmdline}`, "dim");
+    let [cmd, ...args] = cmdline.split(" ");
+    let arg = args.join(" ");
+
+    // HELP
+    if(cmd==="help"||cmdline.endsWith("-h")) 
+        print("Commands:\npwd, ls, ls -l, cd, touch, cat, whoami, id, stat, chmod, file, which, wget, curl, apt update/install/upgrade, dpkg -l, ps aux, free -h, df -h, crontab -l, ip addr, nano, bash, hint, skip, training, train\n💡 `train` / `training` starts practice mode for your mistakes.");
+
+    // HINT
+    else if(cmd==="hint"){ 
+        print(lessons[lessonIndex].hint,"hint"); 
+        state.hintCount++; 
+    }
+
+    // NAVIGATION & FILES
+    else if(cmd==="pwd") print(cwd);
+    else if(cmd==="ls" && args[0]==="-l"){
+        let dir = resolveDir(cwd);
+        if(dir) Object.entries(dir).forEach(([n,f])=>print(`${f.perm} ${user} ${n}`));
+        else print("No such directory","error");
+    }
+    else if(cmd==="ls"){
+        let dir = resolveDir(cwd);
+        if(dir) print(Object.keys(dir).join(" "));
+        else print("No such directory","error");
+    }
+    else if(cmd==="cd"){ 
+        let target = normalizePath(arg||"/");
+        if(resolveDir(target)) cwd=target;
+        else print("No such directory","error");
+    }
+    else if(cmd==="touch"){ 
+        let dir = resolveDir(cwd);
+        if(dir) dir[arg]={content:"",perm:"rw-r--r--",type:"text"}; 
+        print("File created"); 
+    }
+    else if(cmd==="cat"){ 
+        let dir = resolveDir(cwd);
+        let f = dir ? dir[arg] : null;
+        if(f && f.content!==undefined) print(f.content);
+        else print("No such file","error"); 
+    }
+
+    // TRACK LESSON PROGRESS
+    if(lessons[lessonIndex]?.goal && lessons[lessonIndex].goal()){
+        state.testProgress++;
+        if(!lessons[lessonIndex].title.includes("Final") && !state.training){ 
+            lessonIndex++; 
+            state.testProgress=0; 
+            loadLesson(); 
+        } else if(lessons[lessonIndex].title.includes("Final") && state.testProgress>=lessons[lessonIndex].goal()){ 
+            lessonIndex++; 
+            state.testProgress=0; 
+            print("🎉 Lesson complete! Moving to next lesson.","success");
+            if(lessonIndex<lessons.length) loadLesson();
+        }
+    }
+
+    // TRAINING MODE
+    if(state.training){
+        let current = state.trainingQueue[state.trainingIndex];
+        if(current.goal()){ 
+            state.trainingIndex++; 
+            loadTrainingLesson(); 
+        }
+    }
+
+    saveProgress();
+}
+
+// =====================
+// TRAINING MODE FIXED
+// =====================
+function startTraining(){
+    state.training=true;
+    let candidates = lessons.filter(l=>!l.title.includes("Final") && (state.mistakes[l.hint] || lessonIndex <= lessons.indexOf(l)));
+    state.trainingQueue=[];
+    for(let l of candidates){
+        let weight = Math.max(1,(state.mistakes[l.hint]||0));
+        for(let i=0;i<weight;i++) state.trainingQueue.push(l);
+    }
+    shuffle(state.trainingQueue);
+    state.trainingIndex=0;
+    print("🎯 Training session started!","hint");
+    loadTrainingLesson();
+}
+function loadTrainingLesson(){
+    if(state.trainingIndex>=state.trainingQueue.length){ 
+        print("🎉 Training complete!","success"); 
+        state.training=false; 
+        loadLesson(); 
+        return; 
+    }
+    let l=state.trainingQueue[state.trainingIndex];
+    instr.textContent=`🎯 Training: ${l.title}\n\n${l.text}`;
+}
+// =====================
+// LESSONS 7-10 (Advanced)
+// =====================
+lessons.push(
+{ title:"Level 7.1 — Loops in scripts", text:"Add a for loop in script.sh that prints numbers 1-5.", goal:()=>resolveDir(cwd)["script.sh"].content.includes("for"), hint:"for i in 1 2 3 4 5; do echo $i; done" },
+{ title:"Level 7.2 — Variables", text:"Use a variable in script.sh to store a message and echo it.", goal:()=>resolveDir(cwd)["script.sh"].content.includes("msg="), hint:"msg='Hello'; echo $msg" },
+{ title:"🧪 Level 7 Final Test", text:"Write a script using a loop and variable. Run it.", goal:()=>state.testProgress>=2, hint:"Step by step." },
+
+{ title:"Level 8.1 — Redirection", text:"Redirect output of echo 'Hello' to hello.txt.", goal:()=>resolveDir(cwd)["hello.txt"], hint:"echo 'Hello' > hello.txt" },
+{ title:"Level 8.2 — Pipes", text:"Pipe output of echo 'one two three' to grep 'two'.", goal:()=>state.lastCmd==="echo 'one two three' | grep 'two'", hint:"Use | grep" },
+{ title:"Level 8.3 — Filters", text:"Use awk to print the first column of a text file.", goal:()=>state.lastCmd.startsWith("awk"), hint:"awk '{print $1}' file.txt" },
+{ title:"🧪 Level 8 Final Test", text:"Use redirection, pipes, and filters on sample text.", goal:()=>state.testProgress>=3, hint:"Try one at a time." },
+
+{ title:"Level 9.1 — File ownership", text:"Simulate changing ownership of notes.txt to another user.", goal:()=>state.lastCmd==="chown user:group notes.txt", hint:"chown user:group notes.txt" },
+{ title:"Level 9.2 — Permissions review", text:"Check permissions and explain meaning.", goal:()=>state.lastCmd==="stat notes.txt", hint:"stat notes.txt" },
+{ title:"Level 9.3 — Sudo simulation", text:"Run a command with elevated privileges.", goal:()=>state.lastCmd.startsWith("sudo"), hint:"sudo ls /root" },
+{ title:"Level 9.4 — Network commands", text:"Ping 127.0.0.1 and check network info.", goal:()=>state.lastCmd==="ping 127.0.0.1" || state.lastCmd==="ip addr", hint:"ping, ip addr" },
+{ title:"🧪 Level 9 Final Test", text:"Ownership, permissions, sudo, networking.", goal:()=>state.testProgress>=4, hint:"Step by step." },
+
+{ title:"Level 10.1 — Cron automation", text:"Add a simulated cron job to run script.sh every minute.", goal:()=>state.lastCmd==="crontab -l", hint:"crontab -e" },
+{ title:"Level 10.2 — Monitoring", text:"Check running processes and memory.", goal:()=>state.lastCmd==="ps aux" && state.lastCmd==="free -h", hint:"ps aux, free -h" },
+{ title:"Level 10.3 — Combining commands", text:"Use pipe and redirection together.", goal:()=>state.lastCmd.includes("|") && state.lastCmd.includes(">"), hint:"cat file.txt | grep 'pattern' > out.txt" },
+{ title:"🧪 Level 10 Final Test", text:"Simulate sysadmin tasks, monitoring, cron, pipes, redirection.", goal:()=>state.testProgress>=3, hint:"Follow carefully." }
+);
+
+// =====================
+// MOBILE & UX ENHANCEMENTS
+// =====================
+function resizeTerminal(){
+    let h = window.innerHeight - instr.offsetHeight - input.parentElement.offsetHeight - 20;
+    term.style.height = h+"px";
+}
+window.addEventListener("resize", resizeTerminal);
+resizeTerminal();
+input.focus(); // auto-focus input on load
+
+// Auto-scroll terminal handled in print()
+print("📱 Mobile-ready: input focused, terminal auto-scroll, instructions adjust height.");
+
+// =====================
+// FINALIZE HTML
+// =====================
 </script>
 </body>
 </html>
