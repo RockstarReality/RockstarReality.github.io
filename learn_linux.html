@@ -43,7 +43,7 @@ let fs={"/":{home:{student:{"readme.txt":{content:"Welcome to Learn Linux.\nLinu
 let state={lastCmd:"", testProgress:0, packages:[], mistakes:{}, training:false, trainingQueue:[], trainingIndex:0, hintCount:0};
 
 // =====================
-// SHUFFLE FUNCTION (was missing)
+// SHUFFLE FUNCTION
 // =====================
 function shuffle(array) {
   for (let i = array.length - 1; i > 0; i--) {
@@ -152,22 +152,24 @@ function normalizePath(path){
 }
 
 // =====================
-// LOAD LESSON
+// LOAD LESSON – FIXED WITH BACKTICKS
 // =====================
 function loadLesson(){ 
     if(lessonIndex >= lessons.length){ 
-        instr.textContent="🎉 Congratulations! You completed all lessons.";
+        instr.textContent = "🎉 Congratulations! You completed all lessons.";
         return;
     }
-    instr.textContent=`📘 \( {lessons[lessonIndex].title}\n\n \){lessons[lessonIndex].text}`;
-    state.hintCount=0;
+    const title = lessons[lessonIndex]?.title || "(missing title)";
+    const text  = lessons[lessonIndex]?.text  || "(missing instructions)";
+    instr.textContent = `📘 \( {title}\n\n \){text}`;
+    state.hintCount = 0;
     if(!state.training && (lessonIndex===0 || Object.values(state.mistakes).some(v=>v>=2))){
-        print("💡 Tip: Use `training` or `train` anytime.","hint");
+        print("💡 Tip: Use `training` or `train` anytime to practice weak commands.","hint");
     }
 }
 
 // =====================
-// TRAINING
+// TRAINING MODE
 // =====================
 function startTraining(){
     state.training=true;
@@ -179,12 +181,12 @@ function startTraining(){
     }
     shuffle(state.trainingQueue);
     state.trainingIndex=0;
-    print("🎯 Training session started!","hint");
+    print("🎯 Training session started! Type commands to practice.","hint");
     loadTrainingLesson();
 }
 function loadTrainingLesson(){
     if(state.trainingIndex>=state.trainingQueue.length){ 
-        print("🎉 Training complete!","success"); 
+        print("🎉 Training complete! Back to normal lessons.","success"); 
         state.training=false; 
         loadLesson(); 
         return; 
@@ -206,7 +208,7 @@ input.addEventListener("keydown", e=>{
 document.body.addEventListener("click",()=>input.focus());
 
 // =====================
-// COMMAND EXECUTION
+// COMMAND EXECUTION (unchanged from last working version)
 // =====================
 function execute(cmdline){
     if(!cmdline) return;
@@ -217,25 +219,19 @@ function execute(cmdline){
     let cmd = parts[0];
     let arg = parts.slice(1).join(" ");
 
-    // Final lesson auto-progress (prevents stalling)
     if(lessons[lessonIndex]?.title.includes("Final")){
         if(cmd && !["help","hint","skip","training","train","levels","menu","goto","go","jump"].includes(cmd)){
             state.testProgress++;
         }
     }
 
-    // HELP
     if(cmd==="help"||cmdline.endsWith("-h")) {
         print("Commands: pwd ls ls -l cd touch cat whoami id chmod file which wget curl apt update/install/upgrade dpkg -l ps aux free -h df -h crontab -l ip addr echo > nano bash script.sh\nSpecial: hint, skip [N], levels/menu, goto N / go N / jump N, training/train","hint");
     }
-
-    // HINT
     else if(cmd==="hint"){ 
         print(lessons[lessonIndex].hint,"hint"); 
         state.hintCount++; 
     }
-
-    // SKIP
     else if(cmd==="skip"){
         let steps = (arg && !isNaN(parseInt(arg))) ? parseInt(arg) : 1;
         let skipped = 0;
@@ -253,8 +249,6 @@ function execute(cmdline){
             print("Nothing left to skip.","dim");
         }
     }
-
-    // MENU / LEVELS
     else if(cmd==="levels" || cmd==="menu"){
         let output = "📋 Available Lessons:\n";
         lessons.forEach((l,i) => {
@@ -263,8 +257,6 @@ function execute(cmdline){
         });
         print(output.trim(),"hint");
     }
-
-    // GOTO / JUMP
     else if(cmd==="goto" || cmd==="go" || cmd==="jump"){
         let target = parseInt(arg);
         if(!isNaN(target) && target >=1 && target <= lessons.length){
@@ -277,13 +269,9 @@ function execute(cmdline){
             print(`Invalid number. Use 'levels' to see list (1-${lessons.length})`,"error");
         }
     }
-
-    // TRAINING
     else if(cmd==="training" || cmd==="train"){
         startTraining();
     }
-
-    // BASIC COMMANDS
     else if(cmd==="pwd") print(cwd);
     else if(cmd==="ls" && arg==="-l"){
         let dir = resolveDir(cwd);
@@ -343,14 +331,14 @@ function execute(cmdline){
         print("nano: Full editing not supported. Use 'echo \"content\" > filename' instead.","hint");
     }
 
-    // Progress check for regular lessons
+    // Progress for regular lessons
     if(lessons[lessonIndex]?.goal && lessons[lessonIndex].goal()){
         state.testProgress++;
         if(!lessons[lessonIndex].title.includes("Final")){
             lessonIndex++;
             state.testProgress=0;
             loadLesson();
-        } else if(state.testProgress >= 3){  // conservative threshold
+        } else if(state.testProgress >= 3){
             print("🎉 Final test complete! Moving on.","success");
             lessonIndex++;
             state.testProgress=0;
@@ -358,7 +346,6 @@ function execute(cmdline){
         }
     }
 
-    // Training mode check
     if(state.training){
         let current = state.trainingQueue[state.trainingIndex];
         if(current && current.goal()){
@@ -369,12 +356,11 @@ function execute(cmdline){
 }
 
 // =====================
-// START
+// STARTUP
 // =====================
-print("📱 Welcome to Learn Linux Terminal Trainer");
-print("Type 'help' for commands. Type 'levels' to see all lessons.","hint");
-if(!state.training) loadLesson();
-
+print("📱 Welcome to Learn Linux Terminal Trainer","success");
+print("Type 'help' anytime. Type 'levels' to jump around lessons.","hint");
+loadLesson();
 input.focus();
 </script>
 </body>
