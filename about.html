@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bobbie á Deild - IAM/Cybersecurity Consultant</title>
+    <style>
+        /* ============================================
+           GLOBAL STYLES & RESET
+           ============================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #ffffff;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* ============================================
+           LAYERED BACKGROUND SYSTEM
+           This creates a multi-layer background effect with:
+           1. Base wallpaper image (your custom image)
+           2. Blur layer for depth
+           3. Gradient overlay for readability
+           4. Dark overlay for text contrast
+           ============================================ */
+        .background-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        /* LAYER 1: Your custom wallpaper image */
+        .bg-image {
+            background-image: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920');
+            /* 👆 CHANGE THIS URL to your own wallpaper image
+               - Upload your image to imgur.com, imgbb.com, or use a direct link
+               - Or use a local file: url('my-wallpaper.jpg')
+               - Current: Beautiful space/tech themed background
+            */
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            filter: blur(0px);
+            /* 👆 CHANGE blur value (0px to 10px) for different effects */
+        }
+
+        /* LAYER 2: Blur overlay (creates depth) */
+        .bg-blur {
+            background: rgba(0, 0, 0, 0.3);
+            /* 👆 CHANGE opacity (0.1 to 0.7) - higher = darker */
+            backdrop-filter: blur(3px);
+            /* 👆 CHANGE blur (0px to 10px) for frosted glass effect */
+        }
+
+        /* LAYER 3: Gradient overlay (adds visual interest) */
+        .bg-gradient {
+            background: linear-gradient(135deg, 
+                rgba(20, 30, 48, 0.8) 0%, 
+                rgba(36, 59, 85, 0.6) 50%, 
+                rgba(20, 30, 48, 0.8) 100%);
+            /* 👆 CHANGE colors and opacity for different moods
+               - First color: top-left
+               - Second color: middle
+               - Third color: bottom-right
+               Try: rgba(R, G, B, opacity) - opacity from 0.0 to 1.0
+            */
+        }
+
+        /* ============================================
+           NAVIGATION BAR
+           Sticky navigation that stays at top while scrolling
+           ============================================ */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+        }
+
+        nav a {
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        nav a:hover {
+            color: #60a5fa;
+        }
+
+        /* ============================================
+           MAIN CONTENT CONTAINER
+           All sections are contained here
+           ============================================ */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 6rem 2rem 2rem;
+        }
+
+        /* ============================================
+           HERO/ABOUT ME SECTION
+           Your main introduction area
+           ============================================ */
+        .hero {
+            min-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .profile-image {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            animation: fadeInScale 1s ease-out;
+        }
+        /* 👆 CHANGE YOUR PROFILE IMAGE in the HTML below (line ~280)
+           - Replace the src="..." with your image URL
+           - Current: Animated GIF you provided
+        */
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeInUp 1s ease-out 0.2s both;
+        }
+
+        .hero .subtitle {
+            font-size: 1.5rem;
+            color: #94a3b8;
+            margin-bottom: 2rem;
+            animation: fadeInUp 1s ease-out 0.4s both;
+        }
+
+        .hero .bio {
+            max-width: 800px;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #e2e8f0;
+            margin-bottom: 2rem;
+            animation: fadeInUp 1s ease-out 0.6s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Social links styling */
+        .social-links {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 2rem;
+            animation: fadeInUp 1s ease-out 0.8s both;
+        }
+
+        .social-links a {
+            color: #60a5fa;
+            text-decoration: none;
+            font-size: 1.1rem;
+            padding: 0.75rem 1.5rem;
+            border: 2px solid #60a5fa;
+            border-radius: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .social-links a:hover {
+            background: #60a5fa;
+            color: #0f172a;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(96, 165, 250, 0.3);
+        }
+
+        /* ============================================
+           GLASSMORPHISM CARD STYLE
+           Used for blog post cards - frosted glass effect
+           ============================================ */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        /* ============================================
+           BLOG SECTION STYLES
+           ============================================ */
+        .blog-section {
+            margin-top: 4rem;
+            padding: 2rem 0;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 3rem;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .blog-post {
+            margin-bottom: 2rem;
+        }
+
+        .blog-post h3 {
+            color: #60a5fa;
+            margin-bottom: 0.5rem;
+            font-size: 1.5rem;
+        }
+
+        .blog-post .date {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .blog-post p {
+            color: #e2e8f0;
+            margin-bottom: 1rem;
+            line-height: 1.8;
+        }
+
+        .blog-post a {
+            color: #60a5fa;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .blog-post a:hover {
+            color: #a78bfa;
+        }
+
+        .loading {
+            text-align: center;
+            color: #94a3b8;
+            font-style: italic;
+            padding: 2rem;
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+        }
+
+        /* ============================================
+           RESPONSIVE DESIGN
+           Adjusts layout for mobile devices
+           ============================================ */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero .subtitle {
+                font-size: 1.2rem;
+            }
+
+            nav ul {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .social-links {
+                flex-direction: column;
+            }
+
+            .container {
+                padding: 5rem 1rem 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ============================================
+         LAYERED BACKGROUND SYSTEM
+         These 3 divs create the multi-layer background effect
+         ============================================ -->
+    <div class="background-layer bg-image"></div>
+    <div class="background-layer bg-blur"></div>
+    <div class="background-layer bg-gradient"></div>
+
+    <!-- ============================================
+         NAVIGATION BAR
+         Add or remove links as needed
+         ============================================ -->
+    <nav>
+        <ul>
+            <li><a href="#about">About</a></li>
+            <li><a href="https://www.youtube.com/live/MOLfu0T-MHY?t=879s">YouTube</a></li>
+            <li><a href="#blog-manual">Recent Articles</a></li>
+        </ul>
+    </nav>
+
+    <!-- ============================================
+         MAIN CONTENT CONTAINER
+         ============================================ -->
+    <div class="container">
+        
+        <!-- ============================================
+             HERO / ABOUT ME SECTION
+             📝 TO CUSTOMIZE:
+             1. Replace profile image src with your image URL
+             2. Update name in <h1>
+             3. Update title in <p class="subtitle">
+             4. Update bio text in <p class="bio">
+             5. Update LinkedIn link in href
+             ============================================ -->
+        <section id="about" class="hero">
+            <img src="https://getyoursecurity.wordpress.com/wp-content/uploads/2021/08/bobbie-edited.jpg" 
+                 alt="Bobbie á Deild" 
+                 class="profile-image">
+            
+            <h1>Bobbie á Deild</h1>
+            <p class="subtitle">IAM / CYBERSECURITY CONSULTANT</p>
+            
+            <div class="bio">
+                <br><p><strong style="color: #e2e8f0;">$𝐰𝐡𝐨𝐚𝐦𝐢👤<br><br> </strong> A navigator of the unknown, an experience alchemist drawn to creativity, exploration, and solving complex challenges. Performed and shared art in many forms, from music and live events to smithing, tattooing, and other visual arts. Enjoys crafting experiences that connect people and leave an impact.</p>
+                <br>
+                <p>Beyond the creative realm, professional experience spans marketing, sales, and management, having grown up in one of Sweden's first pioneering gyms, learning firsthand the importance of discipline, people skills, and community. Brings a strong work ethic and experience navigating situations that most people rarely encounter.</p>
+                <br>
+                <p>Extensive travel and living in environments ranging from megacities to remote regions has taught adaptability, resilience, and a global perspective. Deeply interested in physical and digital security, currently focusing on cloud security and Identity and Access Management (IAM), alongside foundational programming skills and a strong curiosity about AI.</p>
+                <br>
+                <p>Adventurous by nature, earned a diving certificate at age 12. Learned to solo sail in one month and ventured single-handed into the open sea. Values privacy, human rights, and integrity, maintaining a worldwide network that allows adaptation and thriving in diverse situations.</p>
+                <br>
+                <p>Combines curiosity, creativity, technical exploration, and real-world problem-solving with a commitment to learning, growth, and meaningful connections.</p>
+            </div>
+
+            <!-- Social Links - Add more as needed -->
+            <div class="social-links">
+                <a href="https://www.linkedin.com/in/bobbie-á-deild-828797109/" target="_blank">LinkedIn</a>
+                <a href="https://www.youtube.com/live/MOLfu0T-MHY?si=-QS8BKtcAoPaRnSw&t=879" target="_blank">YouTube</a>
+                <!-- 👇 ADD MORE SOCIAL LINKS HERE by copying the line above
+                     Examples:
+                     <a href="YOUR_TWITTER_URL" target="_blank">🐦 Twitter</a>
+                     <a href="YOUR_GITHUB_URL" target="_blank">💻 GitHub</a>
+                     <a href="mailto:your@email.com">📧 Email</a>
+                -->
+            </div>
+        </section>
+
+        <!-- ============================================
+             METHOD A: AUTOMATIC LINKEDIN RSS FEED
+             ⚠️ LinkedIn RSS fetching didn't work due to restrictions
+             This section is hidden but kept for reference
+             You can delete this entire section if you want
+             ============================================ -->
+        <section id="blog-linkedin" class="blog-section" style="display: none;">
+            <h2 class="section-title">Latest from LinkedIn</h2>
+            <div id="linkedin-posts">
+                <div class="error-message">
+                    <p><strong>LinkedIn automatic fetching unavailable.</strong></p>
+                    <p>Due to LinkedIn's privacy and security policies, automatic RSS fetching is currently restricted.</p>
+                    <p><strong>✅ Solution:</strong> Use the "Featured Articles" section below to manually showcase your best posts!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+             METHOD B: MANUAL BLOG POST CARDS (FALLBACK)
+             Use this section if automatic fetching doesn't work
+             📝 TO ADD NEW POSTS:
+             1. Copy the entire <div class="glass-card blog-post"> block
+             2. Paste it below the existing ones
+             3. Update the title, date, description, and link
+             4. To remove a post, delete its entire <div class="glass-card blog-post"> block
+             ============================================ -->
+        <section id="blog-manual" class="blog-section">
+            <h2 class="section-title">Featured Articles</h2>
+            
+            <!-- 👇 BLOG POST #1 - Copy from here to add more posts -->
+            <div class="glass-card blog-post">
+                <h3>Understanding Zero Trust Architecture in Modern Cloud Environments</h3>
+                <p class="date">January 15, 2026</p>
+                <p>Exploring the principles of Zero Trust and how it transforms security in cloud-native applications. A deep dive into identity verification, least privilege access, and continuous monitoring.</p>
+                <a href="https://www.linkedin.com/in/bobbie-á-deild-828797109/" target="_blank">Read more →</a>
+            </div>
+            <!-- 👆 BLOG POST #1 - Copy to here -->
+
+            <!-- 👇 BLOG POST #2 -->
+            <div class="glass-card blog-post">
+                <h3>The Intersection of Creativity and Cybersecurity</h3>
+                <p class="date">January 8, 2026</p>
+                <p>How my background in art, music, and creative problem-solving influences my approach to security challenges. Thinking outside the box to protect digital assets.</p>
+                <a href="https://www.linkedin.com/in/bobbie-á-deild-828797109/" target="_blank">Read more →</a>
+            </div>
+            <!-- 👆 BLOG POST #2 -->
+
+            <!-- 👇 BLOG POST #3 -->
+            <div class="glass-card blog-post">
+                <h3>IAM Best Practices for 2026</h3>
+                <p class="date">December 28, 2025</p>
+                <p>Key identity and access management strategies for organizations scaling their cloud infrastructure. From multi-factor authentication to role-based access control.</p>
+                <a href="https://www.linkedin.com/in/bobbie-á-deild-828797109/" target="_blank">Read more →</a>
+            </div>
+            <!-- 👆 BLOG POST #3 -->
+
+            <!-- 
+            📝 TO ADD MORE POSTS:
+            Copy any blog post block above and paste it here, then update:
+            - <h3>Your New Title</h3>
+            - <p class="date">Your Date</p>
+            - <p>Your description...</p>
+            - <a href="YOUR_LINK">Read more →</a>
+            -->
+
+        </section>
+
+    </div>
+
+    <!-- ============================================
+         JAVASCRIPT - LINKEDIN RSS FEED FETCHER
+         This code automatically fetches posts from LinkedIn
+         ============================================ -->
+    <script>
+        // ============================================
+        // LINKEDIN RSS CONFIGURATION
+        // 📝 CHANGE THIS to your LinkedIn username
+        // ============================================
+        const LINKEDIN_USERNAME = 'bobbie-á-deild-828797109';
+        // 👆 Your username from your LinkedIn URL
+        // Example: if your URL is linkedin.com/in/john-smith-123
+        // then your username is: john-smith-123
+
+        // ============================================
+        // FUNCTION: Fetch LinkedIn Posts
+        // This function attempts to fetch your LinkedIn RSS feed
+        // and display the latest posts automatically
+        // ============================================
+        async function fetchLinkedInPosts() {
+            const container = document.getElementById('linkedin-posts');
+            
+            // Build the LinkedIn RSS feed URL
+            const linkedinRSSUrl = `https://www.linkedin.com/in/${LINKEDIN_USERNAME}/recent-activity/shares/`;
+            
+            // Try Method 1: Using RSS2JSON API
+            const rss2jsonUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(linkedinRSSUrl)}`;
+            
+            try {
+                console.log('Attempting to fetch LinkedIn posts...');
+                const response = await fetch(rss2jsonUrl);
+                const data = await response.json();
+                
+                // Check if we got valid data
+                if (data.status === 'ok' && data.items && data.items.length > 0) {
+                    console.log('Successfully fetched LinkedIn posts!');
+                    displayPosts(data.items.slice(0, 5)); // Show latest 5 posts
+                } else {
+                    throw new Error('No posts found or RSS feed unavailable');
+                }
+                
+            } catch (error) {
+                console.error('LinkedIn fetch error:', error);
+                
+                // Show fallback message with instructions
+                container.innerHTML = `
+                    <div class="error-message">
+                        <p><strong>Unable to automatically fetch LinkedIn posts.</strong></p>
+                        <p>This can happen due to:</p>
+                        <ul style="margin: 1rem 0; padding-left: 2rem;">
+                            <li>LinkedIn RSS feed restrictions</li>
+                            <li>Privacy settings on your LinkedIn profile</li>
+                            <li>CORS security policies</li>
+                        </ul>
+                        <p><strong>✅ Solution:</strong> Use the "Featured Articles" section below to manually add your posts. It's easy - just copy/paste the template!</p>
+                    </div>
+                `;
+            }
+        }
+
+        // ============================================
+        // FUNCTION: Display Posts
+        // Takes the fetched posts and displays them nicely
+        // ============================================
+        function displayPosts(posts) {
+            const container = document.getElementById('linkedin-posts');
+            
+            // Clear loading message
+            container.innerHTML = '';
+            
+            // Loop through each post and create a card
+            posts.forEach(post => {
+                const postCard = document.createElement('div');
+                postCard.className = 'glass-card blog-post';
+                
+                // Extract date and format it
+                const date = new Date(post.pubDate);
+                const formattedDate = date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                
+                // Remove HTML tags from description for clean text
+                const cleanDescription = post.description.replace(/<[^>]*>/g, '').substring(0, 200) + '...';
+                
+                // Build the HTML for this post
+                postCard.innerHTML = `
+                    <h3>${post.title}</h3>
+                    <p class="date">${formattedDate}</p>
+                    <p>${cleanDescription}</p>
+                    <a href="${post.link}" target="_blank">Read on LinkedIn →</a>
+                `;
+                
+                container.appendChild(postCard);
+            });
+        }
+
+        // ============================================
+        // SMOOTH SCROLLING FOR NAVIGATION
+        // Makes clicking nav links scroll smoothly
+        // ============================================
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // ============================================
+        // AUTO-RUN: Fetch posts when page loads
+        // ============================================
+        window.addEventListener('load', fetchLinkedInPosts);
+        
+        // ============================================
+        // 🎯 QUICK CUSTOMIZATION GUIDE
+        // ============================================
+        /*
+        
+        TO CHANGE BACKGROUND IMAGE:
+        - Go to line ~100 and change the url('...') 
+        
+        TO CHANGE YOUR INFO:
+        - Go to line ~280 and update the HTML
+        
+        TO ADD MANUAL BLOG POSTS:
+        - Go to line ~340 and copy/paste the blog post template
+        
+        TO CHANGE LINKEDIN USERNAME:
+        - Go to line ~380 and update LINKEDIN_USERNAME
+        
+        TO CHANGE COLORS:
+        - Search for color codes like #60a5fa and replace them
+        - Blue: #60a5fa
+        - Purple: #a78bfa
+        - Dark: #0f172a
+        
+        */
+    </script>
+</body>
+</html>
