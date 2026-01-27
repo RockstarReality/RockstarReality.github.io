@@ -76,8 +76,9 @@
         }
 
         /* ============================================
-           NAVIGATION BAR
-           Sticky navigation that stays at top while scrolling
+           NAVIGATION BAR - HORIZONTAL SCROLLING
+           Desktop: Centered buttons
+           Mobile: Horizontal scroll with all buttons visible
            ============================================ */
         nav {
             position: fixed;
@@ -85,7 +86,7 @@
             width: 100%;
             background: rgba(15, 23, 42, 0.9);
             backdrop-filter: blur(10px);
-            padding: 1rem 2rem;
+            padding: 1rem 0;
             z-index: 1000;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
@@ -95,6 +96,7 @@
             display: flex;
             justify-content: center;
             gap: 2rem;
+            padding: 0 2rem;
         }
 
         nav a {
@@ -102,6 +104,7 @@
             text-decoration: none;
             font-weight: 500;
             transition: color 0.3s ease;
+            white-space: nowrap; /* Prevents text wrapping */
         }
 
         nav a:hover {
@@ -198,6 +201,8 @@
             gap: 1.5rem;
             margin-top: 2rem;
             animation: fadeInUp 1s ease-out 0.8s both;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         .social-links a {
@@ -315,10 +320,40 @@
         }
 
         /* ============================================
-           RESPONSIVE DESIGN
+           RESPONSIVE DESIGN - MOBILE
            Adjusts layout for mobile devices
            ============================================ */
         @media (max-width: 768px) {
+            /* Horizontal scrolling navigation on mobile */
+            nav {
+                padding: 0.75rem 0;
+            }
+
+            nav ul {
+                justify-content: flex-start;
+                overflow-x: auto;
+                overflow-y: hidden;
+                -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+                scrollbar-width: none; /* Hide scrollbar on Firefox */
+                gap: 1rem;
+                padding: 0 1rem;
+            }
+
+            /* Hide scrollbar on Chrome/Safari/Edge */
+            nav ul::-webkit-scrollbar {
+                display: none;
+            }
+
+            nav a {
+                font-size: 0.95rem;
+                padding: 0.5rem 1rem;
+            }
+
+            /* Add padding to hero so it doesn't hide behind nav */
+            .hero {
+                padding-top: 4rem;
+            }
+
             .hero h1 {
                 font-size: 2.5rem;
             }
@@ -327,17 +362,33 @@
                 font-size: 1.2rem;
             }
 
-            nav ul {
-                flex-direction: column;
-                gap: 1rem;
-            }
-
             .social-links {
                 flex-direction: column;
+                width: 100%;
+                max-width: 300px;
             }
 
             .container {
                 padding: 5rem 1rem 1rem;
+            }
+
+            .profile-image {
+                width: 150px;
+                height: 150px;
+            }
+        }
+
+        /* Add subtle scroll indicator on mobile */
+        @media (max-width: 768px) {
+            nav::after {
+                content: '';
+                position: absolute;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                width: 30px;
+                background: linear-gradient(to left, rgba(15, 23, 42, 0.9), transparent);
+                pointer-events: none;
             }
         }
     </style>
@@ -352,14 +403,17 @@
     <div class="background-layer bg-gradient"></div>
 
     <!-- ============================================
-         NAVIGATION BAR
-         Add or remove links as needed
+         NAVIGATION BAR - HORIZONTAL SCROLLING
+         Desktop: All buttons centered
+         Mobile: Swipe left/right to see all options
+         📝 CV LINK FIXED: Now downloads directly instead of viewing on GitHub
          ============================================ -->
     <nav>
         <ul>
             <li><a href="#about">About</a></li>
-            <li><a href="https://github.com/RockstarReality/RockstarReality.github.io/blob/main/Bobbie%20á%20Deild.pdf">CV</a></li>
-            <li><a href="https://rockstarreality.github.io">Github</a></li>
+            <li><a href="https://github.com/RockstarReality/RockstarReality.github.io/raw/main/Bobbie%20á%20Deild.pdf" download>CV</a></li>
+            <!-- 👆 CV LINK FIXED: Changed from /blob/ to /raw/ for direct download -->
+            <li><a href="https://rockstarreality.github.io" target="_blank">Github</a></li>
             <li><a href="https://www.youtube.com/live/MOLfu0T-MHY?t=879s" target="_blank">YouTube</a></li>
             <li><a href="#blog-wordpress">Recent Articles</a></li>
         </ul>
@@ -407,7 +461,7 @@
              WORDPRESS BLOG POSTS - AUTOMATIC FETCHING
              This section automatically fetches from your WordPress blog
              📝 CONFIGURATION:
-             - WordPress blog URL is set in JavaScript below (line ~440)
+             - WordPress blog URL is set in JavaScript below
              - Currently set to: ctrlaltdefend3.wordpress.com
              - Change WORDPRESS_BLOG_URL to use a different blog
              - Adjust POST_COUNT to show more or fewer posts
@@ -418,28 +472,6 @@
                 <p class="loading">Loading latest articles from WordPress...</p>
             </div>
         </section>
-
-        <!-- ============================================
-             MANUAL BLOG POSTS (BACKUP/FEATURED)
-             Use this section to feature specific posts or as backup
-             📝 TO ADD POSTS MANUALLY:
-             1. Uncomment the section below (remove <!-.... and ....->)
-             2. Copy the glass-card blog-post template
-             3. Update title, date, description, and link
-             ============================================ -->
-        <!--
-        <section id="blog-manual" class="blog-section">
-            <h2 class="section-title">Featured Articles</h2>
-            
-            <div class="glass-card blog-post">
-                <h3>Your Article Title</h3>
-                <p class="date">January 27, 2026</p>
-                <p>Your article description goes here...</p>
-                <a href="YOUR_ARTICLE_URL" target="_blank">Read more →</a>
-            </div>
-            
-        </section>
-        -->
 
     </div>
 
@@ -456,10 +488,6 @@
         // Your WordPress blog URL (without https:// or trailing slash)
         const WORDPRESS_BLOG_URL = 'ctrlaltdefend3.wordpress.com';
         // 👆 CHANGE THIS to your WordPress blog domain
-        // Examples: 
-        // - 'yourblog.wordpress.com'
-        // - 'getyoursecurity.wordpress.com'
-        // - 'yourdomain.com' (for self-hosted WordPress)
         
         // Number of posts to display
         const POST_COUNT = 5;
@@ -468,13 +496,11 @@
         // ============================================
         // FUNCTION: Fetch WordPress Posts
         // Uses WordPress REST API to get latest posts
-        // This is much more reliable than RSS feeds!
         // ============================================
         async function fetchWordPressPosts() {
             const container = document.getElementById('wordpress-posts');
             
             // Build WordPress REST API URL
-            // WordPress has a built-in JSON API that's perfect for this!
             const apiUrl = `https://public-api.wordpress.com/rest/v1.1/sites/${WORDPRESS_BLOG_URL}/posts/?number=${POST_COUNT}`;
             
             try {
@@ -482,14 +508,12 @@
                 
                 const response = await fetch(apiUrl);
                 
-                // Check if the fetch was successful
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 
                 const data = await response.json();
                 
-                // Check if we got posts
                 if (data.posts && data.posts.length > 0) {
                     console.log(`Successfully fetched ${data.posts.length} posts!`);
                     displayWordPressPosts(data.posts);
@@ -500,7 +524,6 @@
             } catch (error) {
                 console.error('WordPress fetch error:', error);
                 
-                // Show error message with helpful info
                 container.innerHTML = `
                     <div class="error-message">
                         <p><strong>Unable to fetch WordPress posts automatically.</strong></p>
@@ -511,7 +534,6 @@
                             <li>Verify the blog has published posts</li>
                             <li>If using a custom domain, ensure the REST API is enabled</li>
                         </ul>
-                        <p><strong>✅ Alternative:</strong> Uncomment the "Featured Articles" section in the HTML to manually add posts.</p>
                     </div>
                 `;
             }
@@ -548,11 +570,9 @@
                         day: 'numeric'
                     });
                     
-                    // Clean up the excerpt (WordPress provides HTML-free excerpts)
+                    // Clean up the excerpt
                     let excerpt = post.excerpt || '';
-                    // Remove any remaining HTML tags just in case
                     excerpt = excerpt.replace(/<[^>]*>/g, '');
-                    // Trim to reasonable length
                     if (excerpt.length > 250) {
                         excerpt = excerpt.substring(0, 250) + '...';
                     }
@@ -598,26 +618,26 @@
         /*
         
         ✅ WORDPRESS BLOG SETTINGS:
-        - Line 440: Change WORDPRESS_BLOG_URL to your blog domain
-        - Line 448: Change POST_COUNT to show more/fewer posts
+        - Line 515: Change WORDPRESS_BLOG_URL to your blog domain
+        - Line 519: Change POST_COUNT to show more/fewer posts
         
         📸 BACKGROUND IMAGE:
         - Line 53: Change the url('...') to your wallpaper
         
         👤 YOUR INFO:
-        - Line 365: Update profile image, bio, links
+        - Line 423: Update profile image, bio, links
         
         🎨 COLORS:
         - Search for #60a5fa (blue) or #a78bfa (purple) to change
         
-        📝 MANUAL POSTS:
-        - Line 415: Uncomment the Featured Articles section
-        - Copy/paste the blog-post template to add posts
+        📱 MOBILE NAVIGATION:
+        - Navigation now scrolls horizontally on mobile
+        - All buttons visible - just swipe left/right
+        - No overlap with content
         
-        🔧 TROUBLESHOOTING:
-        - Open browser console (F12) to see detailed error messages
-        - Verify your WordPress blog URL is correct
-        - Check that your blog has published posts
+        📄 CV DOWNLOAD:
+        - CV link fixed to download directly from GitHub
+        - Changed from /blob/ to /raw/ in the URL
         
         */
     </script>
