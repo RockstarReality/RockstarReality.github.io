@@ -142,10 +142,6 @@
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
             animation: fadeInScale 1s ease-out;
         }
-        /* 👆 CHANGE YOUR PROFILE IMAGE in the HTML below (line ~280)
-           - Replace the src="..." with your image URL
-           - Current: Animated GIF you provided
-        */
 
         @keyframes fadeInScale {
             from {
@@ -182,6 +178,7 @@
             color: #e2e8f0;
             margin-bottom: 2rem;
             animation: fadeInUp 1s ease-out 0.6s both;
+            text-align: left;
         }
 
         @keyframes fadeInUp {
@@ -307,6 +304,16 @@
             margin: 1rem 0;
         }
 
+        .success-message {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #86efac;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            text-align: center;
+        }
+
         /* ============================================
            RESPONSIVE DESIGN
            Adjusts layout for mobile devices
@@ -351,8 +358,8 @@
     <nav>
         <ul>
             <li><a href="#about">About</a></li>
-            <li><a href="https://www.youtube.com/live/MOLfu0T-MHY?t=879s">YouTube</a></li>
-            <li><a href="#blog-manual">Recent Articles</a></li>
+            <li><a href="https://www.youtube.com/live/MOLfu0T-MHY?t=879s" target="_blank">YouTube</a></li>
+            <li><a href="#blog-wordpress">Recent Articles</a></li>
         </ul>
     </nav>
 
@@ -363,12 +370,6 @@
         
         <!-- ============================================
              HERO / ABOUT ME SECTION
-             📝 TO CUSTOMIZE:
-             1. Replace profile image src with your image URL
-             2. Update name in <h1>
-             3. Update title in <p class="subtitle">
-             4. Update bio text in <p class="bio">
-             5. Update LinkedIn link in href
              ============================================ -->
         <section id="about" class="hero">
             <img src="https://getyoursecurity.wordpress.com/wp-content/uploads/2021/08/bobbie-edited.jpg" 
@@ -390,184 +391,181 @@
                 <p>Combines curiosity, creativity, technical exploration, and real-world problem-solving with a commitment to learning, growth, and meaningful connections.</p>
             </div>
 
-            <!-- Social Links - Add more as needed -->
+            <!-- Social Links -->
             <div class="social-links">
                 <a href="https://www.linkedin.com/in/bobbie-á-deild-828797109/" target="_blank">LinkedIn</a>
                 <a href="https://www.youtube.com/live/MOLfu0T-MHY?si=-QS8BKtcAoPaRnSw&t=879" target="_blank">YouTube</a>
-                <!-- 👇 ADD MORE SOCIAL LINKS HERE by copying the line above
-                     Examples:
-                     <a href="YOUR_TWITTER_URL" target="_blank">🐦 Twitter</a>
-                     <a href="YOUR_GITHUB_URL" target="_blank">💻 GitHub</a>
-                     <a href="mailto:your@email.com">📧 Email</a>
+                <!-- 👇 ADD MORE SOCIAL LINKS HERE
+                     <a href="YOUR_URL" target="_blank">Platform Name</a>
                 -->
             </div>
         </section>
 
         <!-- ============================================
-             METHOD A: AUTOMATIC LINKEDIN RSS FEED
-             ⚠️ LinkedIn RSS fetching didn't work due to restrictions
-             This section is hidden but kept for reference
-             You can delete this entire section if you want
+             WORDPRESS BLOG POSTS - AUTOMATIC FETCHING
+             This section automatically fetches from your WordPress blog
+             📝 CONFIGURATION:
+             - WordPress blog URL is set in JavaScript below (line ~440)
+             - Currently set to: ctrlaltdefend3.wordpress.com
+             - Change WORDPRESS_BLOG_URL to use a different blog
+             - Adjust POST_COUNT to show more or fewer posts
              ============================================ -->
-        <section id="blog-linkedin" class="blog-section" style="display: none;">
-            <h2 class="section-title">Latest from LinkedIn</h2>
-            <div id="linkedin-posts">
-                <div class="error-message">
-                    <p><strong>LinkedIn automatic fetching unavailable.</strong></p>
-                    <p>Due to LinkedIn's privacy and security policies, automatic RSS fetching is currently restricted.</p>
-                    <p><strong>✅ Solution:</strong> Use the "Featured Articles" section below to manually showcase your best posts!</p>
-                </div>
+        <section id="blog-wordpress" class="blog-section">
+            <h2 class="section-title">Latest Articles</h2>
+            <div id="wordpress-posts">
+                <p class="loading">Loading latest articles from WordPress...</p>
             </div>
         </section>
 
         <!-- ============================================
-             METHOD B: MANUAL BLOG POST CARDS (FALLBACK)
-             Use this section if automatic fetching doesn't work
-             📝 TO ADD NEW POSTS:
-             1. Copy the entire <div class="glass-card blog-post"> block
-             2. Paste it below the existing ones
-             3. Update the title, date, description, and link
-             4. To remove a post, delete its entire <div class="glass-card blog-post"> block
+             MANUAL BLOG POSTS (BACKUP/FEATURED)
+             Use this section to feature specific posts or as backup
+             📝 TO ADD POSTS MANUALLY:
+             1. Uncomment the section below (remove <!-.... and ....->)
+             2. Copy the glass-card blog-post template
+             3. Update title, date, description, and link
              ============================================ -->
+        <!--
         <section id="blog-manual" class="blog-section">
             <h2 class="section-title">Featured Articles</h2>
             
-            <!-- 👇 BLOG POST #1 - Copy from here to add more posts -->
             <div class="glass-card blog-post">
-                <h3>Understanding Zero Trust Architecture in Modern Cloud Environments</h3>
-                <p class="date">January 15, 2026</p>
-                <p>Exploring the principles of Zero Trust and how it transforms security in cloud-native applications. A deep dive into identity verification, least privilege access, and continuous monitoring.</p>
-                <a href="https://www.linkedin.com/in/bobbie-á-deild-828797109/" target="_blank">Read more →</a>
+                <h3>Your Article Title</h3>
+                <p class="date">January 27, 2026</p>
+                <p>Your article description goes here...</p>
+                <a href="YOUR_ARTICLE_URL" target="_blank">Read more →</a>
             </div>
-            <!-- 👆 BLOG POST #1 - Copy to here -->
-
-            <!-- 👇 BLOG POST #2 -->
-            <div class="glass-card blog-post">
-                <h3>The Intersection of Creativity and Cybersecurity</h3>
-                <p class="date">January 8, 2026</p>
-                <p>How my background in art, music, and creative problem-solving influences my approach to security challenges. Thinking outside the box to protect digital assets.</p>
-                <a href="https://www.linkedin.com/in/bobbie-á-deild-828797109/" target="_blank">Read more →</a>
-            </div>
-            <!-- 👆 BLOG POST #2 -->
-
-            <!-- 👇 BLOG POST #3 -->
-            <div class="glass-card blog-post">
-                <h3>IAM Best Practices for 2026</h3>
-                <p class="date">December 28, 2025</p>
-                <p>Key identity and access management strategies for organizations scaling their cloud infrastructure. From multi-factor authentication to role-based access control.</p>
-                <a href="https://www.linkedin.com/in/bobbie-á-deild-828797109/" target="_blank">Read more →</a>
-            </div>
-            <!-- 👆 BLOG POST #3 -->
-
-            <!-- 
-            📝 TO ADD MORE POSTS:
-            Copy any blog post block above and paste it here, then update:
-            - <h3>Your New Title</h3>
-            - <p class="date">Your Date</p>
-            - <p>Your description...</p>
-            - <a href="YOUR_LINK">Read more →</a>
-            -->
-
+            
         </section>
+        -->
 
     </div>
 
     <!-- ============================================
-         JAVASCRIPT - LINKEDIN RSS FEED FETCHER
-         This code automatically fetches posts from LinkedIn
+         JAVASCRIPT - WORDPRESS BLOG FETCHER
+         Automatically fetches and displays posts from WordPress
          ============================================ -->
     <script>
         // ============================================
-        // LINKEDIN RSS CONFIGURATION
-        // 📝 CHANGE THIS to your LinkedIn username
+        // WORDPRESS CONFIGURATION
+        // 📝 CHANGE THESE SETTINGS to customize
         // ============================================
-        const LINKEDIN_USERNAME = 'bobbie-á-deild-828797109';
-        // 👆 Your username from your LinkedIn URL
-        // Example: if your URL is linkedin.com/in/john-smith-123
-        // then your username is: john-smith-123
+        
+        // Your WordPress blog URL (without https:// or trailing slash)
+        const WORDPRESS_BLOG_URL = 'ctrlaltdefend3.wordpress.com';
+        // 👆 CHANGE THIS to your WordPress blog domain
+        // Examples: 
+        // - 'yourblog.wordpress.com'
+        // - 'getyoursecurity.wordpress.com'
+        // - 'yourdomain.com' (for self-hosted WordPress)
+        
+        // Number of posts to display
+        const POST_COUNT = 5;
+        // 👆 CHANGE THIS to show more or fewer posts (1-10 recommended)
 
         // ============================================
-        // FUNCTION: Fetch LinkedIn Posts
-        // This function attempts to fetch your LinkedIn RSS feed
-        // and display the latest posts automatically
+        // FUNCTION: Fetch WordPress Posts
+        // Uses WordPress REST API to get latest posts
+        // This is much more reliable than RSS feeds!
         // ============================================
-        async function fetchLinkedInPosts() {
-            const container = document.getElementById('linkedin-posts');
+        async function fetchWordPressPosts() {
+            const container = document.getElementById('wordpress-posts');
             
-            // Build the LinkedIn RSS feed URL
-            const linkedinRSSUrl = `https://www.linkedin.com/in/${LINKEDIN_USERNAME}/recent-activity/shares/`;
-            
-            // Try Method 1: Using RSS2JSON API
-            const rss2jsonUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(linkedinRSSUrl)}`;
+            // Build WordPress REST API URL
+            // WordPress has a built-in JSON API that's perfect for this!
+            const apiUrl = `https://public-api.wordpress.com/rest/v1.1/sites/${WORDPRESS_BLOG_URL}/posts/?number=${POST_COUNT}`;
             
             try {
-                console.log('Attempting to fetch LinkedIn posts...');
-                const response = await fetch(rss2jsonUrl);
+                console.log('Fetching WordPress posts from:', WORDPRESS_BLOG_URL);
+                
+                const response = await fetch(apiUrl);
+                
+                // Check if the fetch was successful
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
                 
-                // Check if we got valid data
-                if (data.status === 'ok' && data.items && data.items.length > 0) {
-                    console.log('Successfully fetched LinkedIn posts!');
-                    displayPosts(data.items.slice(0, 5)); // Show latest 5 posts
+                // Check if we got posts
+                if (data.posts && data.posts.length > 0) {
+                    console.log(`Successfully fetched ${data.posts.length} posts!`);
+                    displayWordPressPosts(data.posts);
                 } else {
-                    throw new Error('No posts found or RSS feed unavailable');
+                    throw new Error('No posts found in the blog');
                 }
                 
             } catch (error) {
-                console.error('LinkedIn fetch error:', error);
+                console.error('WordPress fetch error:', error);
                 
-                // Show fallback message with instructions
+                // Show error message with helpful info
                 container.innerHTML = `
                     <div class="error-message">
-                        <p><strong>Unable to automatically fetch LinkedIn posts.</strong></p>
-                        <p>This can happen due to:</p>
+                        <p><strong>Unable to fetch WordPress posts automatically.</strong></p>
+                        <p>Error: ${error.message}</p>
+                        <p><strong>Troubleshooting:</strong></p>
                         <ul style="margin: 1rem 0; padding-left: 2rem;">
-                            <li>LinkedIn RSS feed restrictions</li>
-                            <li>Privacy settings on your LinkedIn profile</li>
-                            <li>CORS security policies</li>
+                            <li>Check that the blog URL is correct: <strong>${WORDPRESS_BLOG_URL}</strong></li>
+                            <li>Verify the blog has published posts</li>
+                            <li>If using a custom domain, ensure the REST API is enabled</li>
                         </ul>
-                        <p><strong>✅ Solution:</strong> Use the "Featured Articles" section below to manually add your posts. It's easy - just copy/paste the template!</p>
+                        <p><strong>✅ Alternative:</strong> Uncomment the "Featured Articles" section in the HTML to manually add posts.</p>
                     </div>
                 `;
             }
         }
 
         // ============================================
-        // FUNCTION: Display Posts
-        // Takes the fetched posts and displays them nicely
+        // FUNCTION: Display WordPress Posts
+        // Takes fetched posts and creates beautiful cards
         // ============================================
-        function displayPosts(posts) {
-            const container = document.getElementById('linkedin-posts');
+        function displayWordPressPosts(posts) {
+            const container = document.getElementById('wordpress-posts');
             
-            // Clear loading message
-            container.innerHTML = '';
+            // Show success message briefly
+            container.innerHTML = `
+                <div class="success-message">
+                    ✅ Successfully loaded ${posts.length} article${posts.length > 1 ? 's' : ''} from WordPress!
+                </div>
+            `;
             
-            // Loop through each post and create a card
-            posts.forEach(post => {
-                const postCard = document.createElement('div');
-                postCard.className = 'glass-card blog-post';
+            // Remove success message after 3 seconds
+            setTimeout(() => {
+                container.innerHTML = '';
                 
-                // Extract date and format it
-                const date = new Date(post.pubDate);
-                const formattedDate = date.toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
+                // Loop through each post and create a card
+                posts.forEach(post => {
+                    const postCard = document.createElement('div');
+                    postCard.className = 'glass-card blog-post';
+                    
+                    // Format the date
+                    const date = new Date(post.date);
+                    const formattedDate = date.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                    
+                    // Clean up the excerpt (WordPress provides HTML-free excerpts)
+                    let excerpt = post.excerpt || '';
+                    // Remove any remaining HTML tags just in case
+                    excerpt = excerpt.replace(/<[^>]*>/g, '');
+                    // Trim to reasonable length
+                    if (excerpt.length > 250) {
+                        excerpt = excerpt.substring(0, 250) + '...';
+                    }
+                    
+                    // Build the HTML for this post
+                    postCard.innerHTML = `
+                        <h3>${post.title}</h3>
+                        <p class="date">${formattedDate}</p>
+                        <p>${excerpt}</p>
+                        <a href="${post.URL}" target="_blank">Read more →</a>
+                    `;
+                    
+                    container.appendChild(postCard);
                 });
-                
-                // Remove HTML tags from description for clean text
-                const cleanDescription = post.description.replace(/<[^>]*>/g, '').substring(0, 200) + '...';
-                
-                // Build the HTML for this post
-                postCard.innerHTML = `
-                    <h3>${post.title}</h3>
-                    <p class="date">${formattedDate}</p>
-                    <p>${cleanDescription}</p>
-                    <a href="${post.link}" target="_blank">Read on LinkedIn →</a>
-                `;
-                
-                container.appendChild(postCard);
-            });
+            }, 3000);
         }
 
         // ============================================
@@ -590,30 +588,34 @@
         // ============================================
         // AUTO-RUN: Fetch posts when page loads
         // ============================================
-        window.addEventListener('load', fetchLinkedInPosts);
+        window.addEventListener('load', fetchWordPressPosts);
         
         // ============================================
         // 🎯 QUICK CUSTOMIZATION GUIDE
         // ============================================
         /*
         
-        TO CHANGE BACKGROUND IMAGE:
-        - Go to line ~100 and change the url('...') 
+        ✅ WORDPRESS BLOG SETTINGS:
+        - Line 440: Change WORDPRESS_BLOG_URL to your blog domain
+        - Line 448: Change POST_COUNT to show more/fewer posts
         
-        TO CHANGE YOUR INFO:
-        - Go to line ~280 and update the HTML
+        📸 BACKGROUND IMAGE:
+        - Line 53: Change the url('...') to your wallpaper
         
-        TO ADD MANUAL BLOG POSTS:
-        - Go to line ~340 and copy/paste the blog post template
+        👤 YOUR INFO:
+        - Line 365: Update profile image, bio, links
         
-        TO CHANGE LINKEDIN USERNAME:
-        - Go to line ~380 and update LINKEDIN_USERNAME
+        🎨 COLORS:
+        - Search for #60a5fa (blue) or #a78bfa (purple) to change
         
-        TO CHANGE COLORS:
-        - Search for color codes like #60a5fa and replace them
-        - Blue: #60a5fa
-        - Purple: #a78bfa
-        - Dark: #0f172a
+        📝 MANUAL POSTS:
+        - Line 415: Uncomment the Featured Articles section
+        - Copy/paste the blog-post template to add posts
+        
+        🔧 TROUBLESHOOTING:
+        - Open browser console (F12) to see detailed error messages
+        - Verify your WordPress blog URL is correct
+        - Check that your blog has published posts
         
         */
     </script>
