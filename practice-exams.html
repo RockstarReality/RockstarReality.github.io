@@ -200,7 +200,7 @@ const state = {
                 title: "CompTIA Security+ SY0-701 Practice Exam",
                 icon: "📝",
                 difficulty: "intermediate",
-                description: "Realistic simulation of the CompTIA Security+ certification exam with randomized questions",
+                description: "This practice exam validates foundational cybersecurity skills across core domains, including Attacks, Threats, and Vulnerabilities, Architecture and Design, Implementation, Operations and Incident Response, and Governance, Risk, and Compliance. <br>Up to 90 questions Time: 90 minutes<br>",
                 timeLimitMinutes: 90,
                 domainWeights: [0.12, 0.22, 0.18, 0.28, 0.20],
                 questions: [
@@ -488,21 +488,21 @@ const state = {
 
 
 
-],
-domainNames: [
-    "Attacks, Threats, and Vulnerabilities",                    // Domain 1 (24%)
-    "Architecture and Design",                                 // Domain 2 (21%)
-    "Implementation",                                          // Domain 3 (25%)
-    "Operations and Incident Response",                        // Domain 4 (20%)
-    "Governance, Risk, and Compliance"                         // Domain 5 (14%)
-]
+                    ],
+                    domainNames: [
+                        "Attacks, Threats, and Vulnerabilities",                    // Domain 1 (24%)
+                        "Architecture and Design",                                 // Domain 2 (21%)
+                        "Implementation",                                          // Domain 3 (25%)
+                        "Operations and Incident Response",                        // Domain 4 (20%)
+                        "Governance, Risk, and Compliance"                         // Domain 5 (14%)
+                    ]
             },
             {
                 id: 2,
                 title: "AWS Certified Cloud Practitioner (CLF-C02) Practice Exam",
                 icon: "☁️",
                 difficulty: "intermediate",
-                description: "Realistic simulation of the AWS Cloud Practitioner exam – 65 randomized questions, 90 minutes",
+                description: "An entry-level practice exam designed to assess foundational AWS knowledge across key domains, including Cloud Concepts, Security and Compliance, Cloud Technology and Services, and Billing, Pricing, and Support. <br>65 questions, 90 minutes<br>",
                 timeLimitMinutes: 90,
                 domainWeights: [0.24, 0.30, 0.34, 0.12],
                 questions: [
@@ -643,7 +643,9 @@ domainNames: [
                     { domain: 4, type: 'single', question: "Which tool sets cost thresholds and alerts?", options: ["AWS Budgets", "AWS Cost Explorer", "Trusted Advisor", "CloudWatch"], answer: 0, explanation: "Budgets monitor spend and send notifications." }
 
                     
-                ]
+                ],
+                domainNames: ["Cloud Concepts", "Security and Compliance", "Cloud Technology and Services", "Billing, Pricing, and Support"]
+
 
             },
 
@@ -652,7 +654,7 @@ domainNames: [
                 title: "CISSP Practice Exam",
                 icon: "🔒",
                 difficulty: "advanced",
-                description: "Realistic simulation of the CISSP certification exam – randomized questions from all 8 domains",
+                description: "A comprehensive practice exam covering all eight CISSP domains, including risk management, asset security, IAM, security operations, and software development security, designed to test advanced cybersecurity skills.<br>100–150 questions (adaptive), 180 minutes<br>",
                 timeLimitMinutes: 180,  // CISSP is 3 hours (180 minutes)
                 domainWeights: [0.15, 0.10, 0.13, 0.13, 0.13, 0.12, 0.13, 0.11],
                 questions: [
@@ -920,7 +922,11 @@ domainNames: [
 
 
                     // Add more CISSP questions here as needed
-                ]
+                ],
+                domainNames: ["Security and Risk Management", "Asset Security", "Security Architecture and Engineering", "Communication and Network Security", "Identity and Access Management (IAM)", "Security Assessment and Testing", "Security Operations", "Software Development Security"]
+
+
+
             },
 
             {
@@ -928,7 +934,7 @@ domainNames: [
                 title: "SC-300 Microsoft Identity and Access Administrator Practice Exam",
                 icon: "🪪",
                 difficulty: "intermediate",
-                description: "Realistic simulation of the SC-300 certification exam – randomized questions covering Microsoft Entra ID identity and access management",
+                description: "A concise practice exam covering Microsoft Entra ID skills, including user identity management, authentication and access control, workload identities, identity governance, and monitoring and troubleshooting identity solutions.<br>40–60 questions, 120 minutes",
                 timeLimitMinutes: 120, // SC-300 is typically up to 120-150 minutes for practice with ~40-60 questions
                 domainWeights: [0.225, 0.275, 0.225, 0.225, 0.05],
                 questions: [
@@ -1171,7 +1177,8 @@ domainNames: [
 
                     { domain: 1, type: 'single', question: "What Entra ID feature supports passwordless sign-in for hybrid users using FIDO2 keys?", options: ["Enable FIDO2 in authentication methods policy + hybrid join", "Seamless SSO", "Pass-through authentication", "Certificate trust"], answer: 0, explanation: "FIDO2 requires hybrid join and authentication methods enablement." }
                     // Add more SC-300 questions here as needed (paste arrays from previous responses)
-                ]
+                ],
+                domainNames: ["Implement and manage user identities", "Implement authentication and access management", "Implement workload identities and access to resources", "Plan and implement identity governance", "Monitor, maintain, and troubleshoot identity solutions"]
             },
 
             {
@@ -1179,7 +1186,7 @@ domainNames: [
                 title: "AWS Certified Security – Specialty Practice Exam (SCS-C03)",
                 icon: "🛡️",
                 difficulty: "advanced",
-                description: "Realistic simulation of the current AWS Certified Security – Specialty (SCS-C03) exam – randomized questions covering detection, incident response, infrastructure security, IAM, data protection, governance, and generative AI / Bedrock security (live since Dec 2025)",
+                description: "A full-length practice exam validating AWS security expertise across Detection, Incident Response, Infrastructure Security, Identity and Access Management, Data Protection, and Security Foundations and Governance.<br> 65 questions, 170 minutes",
                 timeLimitMinutes: 170, // Official SCS-C03 exam duration is 170 minutes (65 questions total, 50 scored)
                 domainWeights: [0.16, 0.14, 0.18, 0.20, 0.18, 0.14],  // Domains 1–6
                 questions: [
@@ -1413,7 +1420,8 @@ domainNames: [
 
                     { domain: 6, type: 'single', question: "Which lens in the AWS Well-Architected Framework specifically addresses security for generative AI workloads?", options: ["AI & Machine Learning Lens – Security Pillar", "Cost Optimization Lens", "Reliability Pillar only", "Operational Excellence"], answer: 0, explanation: "The AI/ML Lens includes tailored security best practices for Bedrock and GenAI." }
 
-                ]
+                ],
+                domainNames: ["Detection", "Incident Response", "Infrastructure Security", "Identity and Access Management", "Data Protection", "Security Foundations and Governance"]
             }
 
 
@@ -1435,7 +1443,7 @@ domainNames: [
                     </div>
                     <div class="exam-meta">
                         <span class="difficulty ${exam.difficulty}">${exam.difficulty.charAt(0).toUpperCase() + exam.difficulty.slice(1)}</span>
-                        <span class="question-count">~90 questions</span>
+                        <span class="question-count"></span>
                     </div>
                 </div>
             `).join('');
