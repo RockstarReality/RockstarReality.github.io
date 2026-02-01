@@ -1,107 +1,224 @@
-🔐 AWS IAM Audit Access Architecture (Portfolio Project)
-Overview
+# AWS IAM Fundamentals Lab: User & Group Management with Managed Policies
 
-This project demonstrates a secure, enterprise-grade AWS auditing access model using IAM Roles and AWS STS.
-It eliminates long-lived credentials and enforces least-privilege, time-bound access for auditors.
+## Overview
 
-🎯 Goals
+This lab demonstrates core AWS Identity and Access Management (IAM) concepts:
 
-Provide full read-only visibility across the AWS account
+- User, Group, and Role management
+- Managed policy application
+- Least-privilege enforcement
+- Temporary credentials via STS
+- MFA enforcement
+- Trust modeling for internal and external auditors
 
-Avoid sharing admin or persistent IAM credentials
+The lab simulates a small team environment with Developers, Administrators, and Auditors.
 
-Enable temporary, auditable access for security reviews
+---
 
-Follow AWS security best practices
+## Goal / Why
 
-🏗️ Architecture
+- Understand how to organize IAM users and groups
+- Enforce least privilege by using managed policies
+- Verify access via AWS Console and CLI
+- Apply real-world security practices for both internal and external auditors
 
-IAM User (audit_user)
+---
 
-No direct AWS service permissions
+## Scenario / Context
 
-Only allowed to call sts:AssumeRole
+| Team        | Access Needs |
+|------------|------------------------------------------------|
+| Developers | S3 read/write, EC2 management |
+| Administrators | Full administrative access |
+| Auditors (Internal) | Read-only monitoring and compliance |
+| Auditors (External) | Temporary, role-based read-only access via STS |
 
-IAM Role (AuditReadOnlyRole)
+---
 
-Trusted by audit_user
+## Steps Taken
 
-Attached policy: ReadOnlyAccess
+### 1. Root Account Security
 
-Used exclusively for auditing
+- Logged into AWS root account **once**
+- Enabled MFA
+- Stored recovery information securely
+- Root access restricted to emergencies
 
-AWS STS
+### 2. Create Admin IAM User
 
-Issues temporary credentials upon role assumption
+- User: `admin_user`
+- Attached **AdministratorAccess-equivalent policy** for lab purposes:
 
-Credentials expire automatically
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "*",
+      "Resource": "*"
+    }
+  ]
+}
+```
 
-🔄 Access Flow
+3. Create IAM Users
 
-Auditor authenticates using IAM user credentials
+Users: dev_user, ops_user, audit_user
 
-Auditor assumes AuditReadOnlyRole via AWS STS
-
-AWS returns temporary credentials
-
-Auditor performs read-only API calls
-
-Credentials expire automatically
-
-🔑 Credential Model
-Type	Description
-AccessKeyId	Temporary
-SecretAccessKey	Temporary
-SessionToken	Required
-Expiration	Automatic
-
-❗ No long-lived access keys are used for auditing.
-
-🔐 Security Benefits
-
-✔ Least privilege
-
-✔ Time-limited access
-
-✔ No shared admin accounts
-
-✔ Full CloudTrail visibility
-
-✔ Easy revocation (disable role trust)
-
-🧪 Example CLI Usage
-aws sts assume-role \
-  --role-arn arn:aws:iam::<ACCOUNT_ID>:role/AuditReadOnlyRole \
-  --role-session-name audit-session \
-  --profile audit_user
-
-📸 Validation Evidence
-
-aws sts get-caller-identity
-
-IAM user listing
-
-Role trust policy
-
-AccessDenied proof before trust
-
-Successful STS session after trust
-
-(Include screenshots)
-
-💼 Why This Matters
-
-This pattern is used by:
-
-Security teams
-
-External auditors
-
-SOC2 / ISO 27001 audits
-
-Enterprise AWS environments
+Enabled console access with temporary password
 
 
-⭐
-“We don’t grant auditors permissions directly.
-We issue temporary STS credentials via a trusted role, which limits blast radius and removes long-lived secrets.”
+4. Create IAM Groups & Attach Managed Policies
+Group	Managed Policies
+Developers	AmazonS3FullAccess, AmazonEC2ReadOnlyAccess
+Admins	AdministratorAccess
+Auditors	ReadOnlyAccess
+
+
+5. Assign Users to Groups
+
+dev_user → Developers
+
+ops_user → Admins
+
+audit_user → Auditors
+
+
+6. Create Resources
+
+Created a sample S3 bucket for testing permissions
+
+
+7. Verify Permissions
+
+Logged in as each user via Console and CLI
+
+Confirmed allowed actions matched group policies
+
+Tested forbidden actions to verify denies
+
+Observations
+
+audit_user initially had AIOpsReadOnlyAccess, causing AccessDenied when listing S3 buckets
+
+Managed policies differ in scope; using the wrong one can silently block services
+
+Policy debugging sometimes requires user-level overrides temporarily
+
+Actions & Fixes
+
+Attached AmazonS3ReadOnlyAccess directly to audit_user for verification
+
+Verified S3 access via CLI:
+
+aws s3 ls --profile audit_user
+
+
+Deleted user-level attachment and applied policy to Auditors group
+
+Verified proper access
+
+Lessons Learned
+
+Always check policy permissions before assuming access
+
+Groups are preferred over user-level permissions for manageability
+
+Explicit denies override allows, regardless of user or group membership
+
+MFA enforcement is critical
+
+Policy Simulator is a helpful validation tool
+
+"This lab intentionally mirrors real-world IAM evolution: from static user permissions → group-based access → temporary, role-based trust with enforced expiration."
+
+Auditor Access Model
+Internal Auditors
+
+Standing read-only access governed by MFA and regular review
+
+IAM user credentials long-lived
+
+Group-based ReadOnlyAccess
+
+External Auditors
+
+Temporary STS credentials via AuditReadOnlyRole
+
+TTL enforced automatically by AWS (expiration in UTC)
+
+Eliminates long-lived secrets
+
+Trust explicitly defined in role trust policy
+
+
+Trust Flow Diagram:
+
+External Auditor
+   |
+   | (Authenticate)
+   v
+IAM User / Federated Identity
+   |
+   | sts:AssumeRole (logged)
+   v
+AuditReadOnlyRole
+   |
+   | Temporary credentials (TTL enforced)
+   v
+Read-only access → auto-expire
+
+
+Optional Security Enhancements
+
+Enforce MFA for all users
+
+Reduce external auditor TTL (15–60 minutes)
+
+Restrict AssumeRole by time or IP
+
+Monitor sts:AssumeRole events via CloudTrail
+
+Outcome / Results
+
+Users successfully created and grouped
+
+Managed policies applied correctly
+
+MFA enforced for all users
+
+Principle of least privilege verified
+
+
+Risks Exposed / Mitigated
+Risk	Mitigation
+Over-permission of Devs or Auditors	Used managed policies aligned with minimal necessary access
+Orphaned accounts	Created regular audit process (to be automated later)
+Lack of MFA	Enabled MFA to prevent compromised credentials
+Next Steps / Improvements
+
+Automate user/group creation with CloudFormation or Terraform
+
+Use granular custom policies instead of broad managed ones
+
+Integrate CloudTrail logging and monitoring
+
+Evidence / Artifacts
+
+Screenshots of IAM Console showing users and groups
+
+CLI output of policy attachment and verification
+
+Optional Policy Simulator screenshots
+
+References
+
+AWS IAM Best Practices
+https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html
+
+AWS STS Temporary Credentials
+https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp.html
+
+CIS AWS Foundations Benchmark
+https://www.cisecurity.org/benchmark/amazon_web_services/
