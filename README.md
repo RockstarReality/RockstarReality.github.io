@@ -100,3 +100,8 @@ External auditors
 SOC2 / ISO 27001 audits
 
 Enterprise AWS environments
+
+
+⭐
+“We don’t grant auditors permissions directly.
+We issue temporary STS credentials via a trusted role, which limits blast radius and removes long-lived secrets.”
