@@ -438,6 +438,10 @@ This ensures administrative access is:
 Note on CloudTrail Identity Display
 In the CloudTrail Event History summary view, events display the originating IAM user (ops_user). However, inspection of the full event record confirms the userIdentity.type as AssumedRole, with the action executed via the AdminRole using temporary STS credentials (ASIA...). This is expected CloudTrail behavior.
 
+Due to lab time constraints, STS credential expiration was not waited on in real time; however, session-based access was validated by confirming the inability to perform administrative actions outside an assumed role.
+STS Credential Expiration Validation:
+Role assumption events were inspected in AWS CloudTrail. The AssumeRole event record confirms that temporary STS credentials were issued with a fixed expiration timestamp. Additionally, the role’s maximum session duration enforces an upper bound on credential lifetime, ensuring access cannot persist indefinitely. Active role sessions can also be manually revoked, immediately invalidating temporary credentials.
+
 ---
 
 
