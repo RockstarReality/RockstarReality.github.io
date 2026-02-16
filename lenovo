@@ -1,8 +1,9 @@
 # Fixing Brightness Control on Lenovo Laptops with NVIDIA GPU and Nouveau Driver (Kali Linux)
-The Problem
-Lenovo Legion/LOQ laptops with NVIDIA GPUs running in discrete graphics mode with the Nouveau driver have non-functional brightness controls. The brightness slider moves but the screen brightness doesn't change.
-Why This Happens
 
+# The Problem:
+Lenovo Legion/LOQ laptops with NVIDIA GPUs running in discrete graphics mode with the Nouveau driver have non-functional brightness controls. The brightness slider moves but the screen brightness doesn't change.
+
+# Why This Happens:
 Laptop is in "Discrete Graphics Only" mode (AMD iGPU disabled in BIOS)
 The nvidia_wmi_ec_backlight interface is created but doesn't actually control hardware with Nouveau
 Hardware brightness control requires either:
@@ -12,19 +13,26 @@ NVIDIA proprietary drivers (not recommended due to instability)
 
 
 
-The Solution: Software Brightness Control via xrandr
+# The Solution: 
+Software Brightness Control via xrandr
 Instead of hardware backlight control, we use xrandr to adjust software brightness (dims pixels rather than backlight).
 
+
+
 Step-by-Step Fix
+
 1. Find Your Display Name
 bashxrandr | grep " connected"
 Output example: eDP-1 connected 1920x1080+0+0...
+
 2. Test Manual Brightness Control
 bashxrandr --output eDP-1 --brightness 0.5   # 50%
 xrandr --output eDP-1 --brightness 1.0   # 100%
 xrandr --output eDP-1 --brightness 0.3   # 30%
+
 3. Install Required Tools
 bashsudo apt install zenity redshift
+
 4. Create the Control Script
 bashmkdir -p ~/.local/bin
 nano ~/.local/bin/brightness-menu-zenity.sh
@@ -105,8 +113,10 @@ esac
 Important: Replace eDP-1 with your actual display name from step 1.
 Make it executable:
 bashchmod +x ~/.local/bin/brightness-menu-zenity.sh
+
 5. Test the Script
 bash~/.local/bin/brightness-menu-zenity.sh
+
 6. Create Desktop Launcher
 bashmkdir -p ~/.local/share/applications
 nano ~/.local/share/applications/brightness-control.desktop
@@ -125,6 +135,7 @@ Categories=Utility;
 Note: Replace /home/kali/ with your actual home directory path if different.
 Make it executable:
 bashchmod +x ~/.local/share/applications/brightness-control.desktop
+
 7. Add to XFCE Panel (Optional)
 
 Right-click on XFCE panel → "Panel" → "Panel Preferences"
