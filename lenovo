@@ -1,4 +1,4 @@
-Fixing Brightness Control on Lenovo Laptops with NVIDIA GPU and Nouveau Driver (Kali Linux)
+# Fixing Brightness Control on Lenovo Laptops with NVIDIA GPU and Nouveau Driver (Kali Linux)
 The Problem
 Lenovo Legion/LOQ laptops with NVIDIA GPUs running in discrete graphics mode with the Nouveau driver have non-functional brightness controls. The brightness slider moves but the screen brightness doesn't change.
 Why This Happens
