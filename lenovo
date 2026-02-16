@@ -162,3 +162,15 @@ Then update eDP-1 in the script to match your display.
 Reset everything to default
 bashxrandr --output eDP-1 --brightness 1.0
 redshift -x
+
+
+
+Why Not Use NVIDIA Proprietary Drivers?
+While NVIDIA proprietary drivers would enable hardware brightness control, they:
+
+Often break on kernel updates
+Can cause TTY lock issues
+Require complex DKMS management
+May conflict with Nouveau
+
+This software solution is stable, safe, and doesn't require risky driver installations.
